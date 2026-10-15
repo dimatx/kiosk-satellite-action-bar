@@ -365,6 +365,7 @@ public final class ActionBarPlugin implements KioskPlugin {
         if (!item.entity.equals(entity)) return;
         EntityState state = states.getOrDefault(item.entity, EntityState.UNKNOWN);
         menuView.update(Actions.describe(item.entity, state), Actions.choices(item.entity, state), state.position);
+        menuView.setStatus(state.usable(), Actions.alarming(item.entity, state));
     }
 
     /**
@@ -674,6 +675,7 @@ public final class ActionBarPlugin implements KioskPlugin {
                         try { restartMenuTimeout(); } catch (RuntimeException ignored) {}
                     }
                 });
+            view.setStatus(state.usable(), Actions.alarming(item.entity, state));
             if (generation == menuGeneration) menuView = view;
             return view;
         }

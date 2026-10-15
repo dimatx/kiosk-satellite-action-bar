@@ -57,6 +57,11 @@ final class ActionViews {
         void onDepth(int depthDp);
     }
 
+    /** A color with its alpha scaled by `strength`, to dim through colors rather than view alpha. */
+    static int fade(int color, float strength) {
+        return Color.argb(Math.round(Color.alpha(color) * strength), Color.red(color), Color.green(color), Color.blue(color));
+    }
+
     static int color(KsTheme theme, String role, String fallback) {
         try {
             return theme.color(role);
@@ -552,10 +557,6 @@ final class ActionViews {
             cells.get(i).invalidate();
         }
 
-        private static int fade(int color, float strength) {
-            return Color.argb(Math.round(Color.alpha(color) * strength), Color.red(color), Color.green(color), Color.blue(color));
-        }
-
         void restyle(KsTheme next) {
             theme = next;
             float s = config.scale;
@@ -636,6 +637,8 @@ final class ActionViews {
         private List<Actions.Choice> choices;
         private final MenuListener listener;
         private boolean tracking;
+        private boolean usable = true;
+        private boolean alarming;
         private KsTheme theme;
 
         MenuPanel(Context context, KsTheme theme, ActionConfig config, String name, String stateText,
@@ -712,6 +715,7 @@ final class ActionViews {
                     }
                     @Override public void onStopTrackingTouch(SeekBar bar) {
                         tracking = false;
+                        bar.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
                         listener.onPosition(bar.getProgress());
                     }
                 });
@@ -767,6 +771,17 @@ final class ActionViews {
             if (slider != null && !tracking && position != null) slider.setProgress(position);
         }
 
+        /**
+         * While the entity is unavailable the controls dim and ignore touches; a state that needs
+         * attention, such as a jammed lock, shows in the error color.
+         */
+        void setStatus(boolean usable, boolean alarming) {
+            if (usable == this.usable && alarming == this.alarming) return;
+            this.usable = usable;
+            this.alarming = alarming;
+            applyChoices();
+        }
+
         @Override public boolean dispatchTouchEvent(MotionEvent event) {
             if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                 try { listener.onMenuTouch(); } catch (RuntimeException ignored) {}
@@ -778,14 +793,20 @@ final class ActionViews {
             int pill = color(theme, "secondaryContainer", "primaryContainer");
             int onPill = color(theme, "onSecondaryContainer", "onSurface");
             int off = theme.color("onSurfaceVariant");
+            // Dimmed through colors, as on the bar: a view's alpha alone never reaches KS's screen.
+            float strength = usable ? 1f : 0.38f;
             for (int i = 0; i < buttons.size(); i++) {
                 Actions.Choice choice = choices.get(i);
-                ((GradientDrawable) pills.get(i).getBackground()).setColor(choice.current ? pill : Color.TRANSPARENT);
-                setIcon(buttonIcons.get(i), theme, choice.icon, choice.current ? onPill : off);
-                buttonLabels.get(i).setTextColor(choice.current ? theme.color("onSurface") : off);
-                buttons.get(i).setSelected(choice.current);
+                boolean marked = choice.current && usable;
+                ((GradientDrawable) pills.get(i).getBackground()).setColor(marked ? pill : Color.TRANSPARENT);
+                setIcon(buttonIcons.get(i), theme, choice.icon, fade(marked ? onPill : off, strength));
+                buttonLabels.get(i).setTextColor(fade(marked ? theme.color("onSurface") : off, strength));
+                buttons.get(i).setSelected(marked);
+                buttons.get(i).setEnabled(usable);
                 buttons.get(i).invalidate();
             }
+            state.setTextColor(alarming ? color(theme, "error", "onSurfaceVariant") : off);
+            if (slider != null) slider.setEnabled(usable);
         }
 
         void restyle(KsTheme next) {
@@ -836,7 +857,11 @@ final class ActionViews {
                 if (upright) {
                     // A fixed length, so the slider is long enough to set a position with a finger.
                     int length = theme.px(160 * s);
-                    sliderBox.setLayoutParams(new LinearLayout.LayoutParams(thickness, length));
+                    // Room above and below, so the thumb at either end never touches Open or Closed.
+                    LinearLayout.LayoutParams boxParams = new LinearLayout.LayoutParams(thickness, length);
+                    boxParams.topMargin = theme.px(8 * s);
+                    boxParams.bottomMargin = theme.px(8 * s);
+                    sliderBox.setLayoutParams(boxParams);
                     LinearLayout.LayoutParams columnParams = (LinearLayout.LayoutParams) ((View) sliderBox.getParent()).getLayoutParams();
                     if (config.edge == ActionConfig.Edge.LEFT) columnParams.leftMargin = theme.px(32 * s);
                     else columnParams.rightMargin = theme.px(32 * s);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- A cover's menu marks Open only when the cover is all the way open or opening, and Close only when it's closed or closing. A shade part way open marks neither.
+- While its entity is unavailable, an open menu dims and ignores touches, and comes back when the entity does.
+- A jammed lock shows its state in the error color.
+- An upright slider has room at each end, so its thumb never touches the Open or Closed label, and letting go of it gives a haptic tick.
 ## 0.2.0
 
 - A tap on a shade, blind or other cover opens a menu with Open, Stop and Close, and a slider for its position when the cover reports one. A tap on a lock opens Lock and Unlock. The current state is highlighted and stays live while the menu is open.

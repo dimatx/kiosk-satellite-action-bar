@@ -112,6 +112,12 @@ public final class NativeViewTest {
             panel.update(Actions.describe("cover.shade", moved), Actions.choices("cover.shade", moved), 10);
             measure(panel, theme.px(360), theme.px(480));
             check(panel.getMeasuredWidth() == width && panel.getMeasuredHeight() == height, "a state change never resizes the menu");
+            panel.setStatus(false, false);
+            measure(panel, theme.px(360), theme.px(480));
+            check(!buttons.get(0).isEnabled() && !slider.isEnabled(), "an unavailable entity disables the menu at " + at);
+            check(panel.getMeasuredWidth() == width && panel.getMeasuredHeight() == height, "going unavailable never resizes the menu at " + at);
+            panel.setStatus(true, false);
+            check(buttons.get(0).isEnabled() && slider.isEnabled(), "the menu comes back with the entity at " + at);
             EntityState lockState = new EntityState("available", "locked", "Front", null, null, 0, "t", null);
             ActionViews.MenuPanel lock = new ActionViews.MenuPanel(context, theme, config, "Front door",
                 Actions.describe("lock.front", lockState), Actions.choices("lock.front", lockState), null, false, new MenuListener());

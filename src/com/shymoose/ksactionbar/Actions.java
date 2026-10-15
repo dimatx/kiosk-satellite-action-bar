@@ -158,9 +158,12 @@ final class Actions {
             case "cover":
                 // A cover that reports no features at all is offered every basic control.
                 boolean any = features == 0;
+                // A choice is marked only when the cover is all the way there or moving that way,
+                // so a shade at 40% marks neither Open nor Close.
+                boolean fullyOpen = "open".equals(value) && (state.position == null || state.position >= 100);
                 if (any || (features & COVER_SUPPORTS_OPEN) != 0) {
                     choices.add(new Choice("Open", defaultIcon(entityId, dc, true), new Call("cover", "open_cover", "open"),
-                        "open".equals(value) || "opening".equals(value)));
+                        fullyOpen || "opening".equals(value)));
                 }
                 if ((features & COVER_SUPPORTS_STOP) != 0) {
                     choices.add(new Choice("Stop", "mdi:stop", new Call("cover", "stop_cover", "stop"), false));
@@ -190,6 +193,11 @@ final class Actions {
     static Call position(int percent) {
         int value = Math.max(0, Math.min(100, percent));
         return new Call("cover", "set_cover_position", "move", Collections.<String, Object>singletonMap("position", value));
+    }
+
+    /** Whether the state needs attention in a menu, such as a jammed lock. */
+    static boolean alarming(String entityId, EntityState state) {
+        return "lock".equals(domain(entityId)) && "jammed".equals(state.state);
     }
 
     /** A short description of the entity's state for a menu's title, such as "Open · 40%". */

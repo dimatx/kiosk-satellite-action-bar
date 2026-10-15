@@ -68,7 +68,18 @@ public final class ActionTest {
         List<Actions.Choice> shade = Actions.choices("cover.shade", positioned("open", "shade", 15, 40));
         eq(3, shade.size());
         eq("Open", shade.get(0).label);
-        check(shade.get(0).current);
+        // Part way open marks neither end; all the way open, or moving, marks that end.
+        check(!shade.get(0).current);
+        check(Actions.choices("cover.shade", positioned("open", "shade", 15, 100)).get(0).current);
+        check(Actions.choices("cover.shade", positioned("opening", "shade", 15, 40)).get(0).current);
+        check(Actions.choices("cover.shade", positioned("closed", "shade", 15, 0)).get(2).current);
+        check(Actions.choices("cover.shade", positioned("closing", "shade", 15, 40)).get(2).current);
+        // Without a position, open means all the way open.
+        check(Actions.choices("cover.basic", positioned("open", null, 0, null)).get(0).current);
+        // A jammed lock needs attention; a locked one does not.
+        check(Actions.alarming("lock.front", state("jammed", null, 0)));
+        check(!Actions.alarming("lock.front", state("locked", null, 0)));
+        check(!Actions.alarming("cover.shade", positioned("open", "shade", 15, 40)));
         eq("Stop", shade.get(1).label);
         eq("Close", shade.get(2).label);
         check(!shade.get(2).current);

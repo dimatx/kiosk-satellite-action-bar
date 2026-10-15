@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "ks-action-bar",
   "name": "Action Bar",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "apiVersion": 1,
   "minAndroidSdk": 26,
   "entryClass": "com.shymoose.ksactionbar.ActionBarPlugin",
