@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "id": "ks-action-bar",
+  "name": "Action Bar",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "minAndroidSdk": 26,
+  "entryClass": "com.shymoose.ksactionbar.ActionBarPlugin",
+  "description": "A bar of Home Assistant controls: tap to switch lights, open shades or lock doors.",
+  "author": "dimatx",
+  "license": "Apache-2.0",
+  "capabilities": [
+    "overlay",
+    "host.read",
+    "ha"
+  ],
+  "settings": [
+    {
+      "key": "position",
+      "type": "select",
+      "title": "Position",
+      "default": "Right",
+      "group": "Appearance",
+      "description": "The edge of the screen the bar sits on.",
+      "options": [
+        "Right",
+        "Left",
+        "Top",
+        "Bottom"
+      ]
+    },
+    {
+      "key": "labels",
+      "type": "select",
+      "title": "Labels",
+      "default": "Always",
+      "group": "Appearance",
+      "description": "Whether names show under the icons.",
+      "options": [
+        "Always",
+        "Never"
+      ]
+    },
+    {
+      "key": "scale",
+      "type": "select",
+      "title": "Size",
+      "default": "100%",
+      "group": "Appearance",
+      "description": "The size of the bar.",
+      "options": [
+        "80%",
+        "90%",
+        "100%",
+        "110%",
+        "120%",
+        "140%"
+      ]
+    },
+    {
+      "key": "opacity",
+      "type": "number",
+      "title": "Opacity",
+      "default": 100,
+      "group": "Appearance",
+      "description": "How much of the dashboard shows through.",
+      "min": 20,
+      "max": 100,
+      "step": 5,
+      "unit": "%"
+    },
+    {
+      "key": "items",
+      "type": "list",
+      "title": "Items",
+      "default": [],
+      "group": "Items",
+      "description": "Lights, switches, fans, shades, locks, scripts, scenes and buttons.",
+      "addTitle": "Add item",
+      "maxItems": 16,
+      "row": {
+        "title": "label",
+        "subtitle": [
+          "entity"
+        ],
+        "icon": "icon"
+      },
+      "fields": [
+        {
+          "key": "entity",
+          "type": "entity",
+          "title": "Entity",
+          "required": true
+        },
+        {
+          "key": "label",
+          "type": "string",
+          "title": "Label",
+          "description": "Leave empty to use the entity's name."
+        },
+        {
+          "key": "icon",
+          "type": "icon",
+          "title": "Icon",
+          "description": "Leave empty to have one picked for the entity."
+        },
+        {
+          "key": "iconOn",
+          "type": "icon",
+          "title": "Icon when on",
+          "description": "The icon while the entity is on or open. Uses Icon when empty."
+        }
+      ]
+    },
+    {
+      "key": "holdToConfirm",
+      "type": "boolean",
+      "title": "Hold for locks and garage doors",
+      "default": true,
+      "group": "Behavior",
+      "description": "Locks, garage doors and gates act on a long press, so a stray tap does nothing."
+    },
+    {
+      "key": "collapse",
+      "type": "select",
+      "title": "Swipe to hide",
+      "default": "Start visible",
+      "group": "Behavior",
+      "description": "Swipe the bar toward its edge to hide it behind a small tab.",
+      "options": [
+        "Start visible",
+        "Start hidden",
+        "Off"
+      ]
+    },
+    {
+      "key": "autoCollapse",
+      "type": "number",
+      "title": "Hide after",
+      "default": 0,
+      "group": "Behavior",
+      "description": "How long the bar stays visible without a tap. 0 keeps it visible.",
+      "min": 0,
+      "max": 300,
+      "step": 5,
+      "unit": "s",
+      "visibleWhen": {
+        "key": "collapse",
+        "notEquals": "Off"
+      }
+    },
+    {
+      "key": "makeRoom",
+      "type": "boolean",
+      "title": "Keep the dashboard clear",
+      "default": true,
+      "group": "Behavior",
+      "description": "End the dashboard beside the bar instead of under it."
+    },
+    {
+      "key": "hideOn",
+      "type": "list",
+      "title": "Pages",
+      "default": [],
+      "group": "Hide the bar on",
+      "description": "The bar stays hidden on these pages.",
+      "addTitle": "Add page",
+      "maxItems": 32,
+      "row": {
+        "title": "page"
+      },
+      "fields": [
+        {
+          "key": "page",
+          "type": "dashboard",
+          "title": "Page",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "id": "show",
+      "title": "Show action bar"
+    },
+    {
+      "id": "hide",
+      "title": "Hide action bar"
+    },
+    {
+      "id": "toggle",
+      "title": "Toggle action bar"
+    }
+  ],
+  "groups": [
+    {
+      "title": "Appearance"
+    },
+    {
+      "title": "Items"
+    },
+    {
+      "title": "Behavior"
+    },
+    {
+      "title": "Hide the bar on"
+    }
+  ]
+}

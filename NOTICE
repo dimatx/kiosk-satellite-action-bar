@@ -1,0 +1,14 @@
+Action Bar for Kiosk Satellite
+Copyright 2026 Dima Tokar
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+Built from the Kiosk Satellite plugin template
+(https://github.com/jxlarrea/kiosk-satellite-plugin-hello-world), Apache-2.0.
+The SDK sources under sdk/ and the build tools under tools/ come from that
+template.
+
+Kiosk Satellite itself is a separate work by Xavier Larrea under its own license
+and is not part of this repository.
+
+Icons are drawn by Kiosk Satellite from its own Material Design Icons set.
