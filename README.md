@@ -1,66 +1,106 @@
 # Action Bar for Kiosk Satellite
 
-**A bar of Home Assistant controls for [Kiosk Satellite](https://github.com/jxlarrea/kiosk-satellite) wall panels.** Tap to switch a light, open a shade or run a scene. Each item shows its entity's live state, and Kiosk Satellite draws the bar with its own colors, type and icons, so it looks like part of the kiosk.
+**One-tap Home Assistant controls for [Kiosk Satellite](https://github.com/jxlarrea/kiosk-satellite) wall panels.** Switch a light, open the shades or lock up, from any page, without opening a dashboard. Each button shows its entity's live state, and Kiosk Satellite draws the bar with its own colors, type and icons, so it looks like part of the kiosk.
+
+<p align="center"><img src="docs/images/rail.png" alt="The action bar as a rail on the right of a dashboard" width="720"></p>
+
+| Along the bottom | Hold to unlock | Hidden |
+| :---: | :---: | :---: |
+| <img src="docs/images/bottom.png" alt="The action bar along the bottom" width="260"> | <img src="docs/images/hint.png" alt="A tap on a lock shows Hold to lock" width="150"> | <img src="docs/images/tab.png" alt="The bar hidden behind a tab" width="260"> |
+| A bar along the top or bottom | A tap on a lock only says what a long press does | Swipe it away behind a small tab |
 
 A companion to [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar): the navbar moves between pages, the action bar acts in place.
 
 ## Why use it
 
-- **One tap, no dashboard.** Lights, switches, fans, shades, scripts, scenes, buttons and media players respond to a single tap, from any page.
-- **Live state.** Items light up while their entity is on or open, dim while it's unavailable, and show a tap as pending until Home Assistant confirms it.
-- **Safe by default.** Locks, garage doors and gates need a long press. A single tap only says *Hold to unlock*, and an unlocked lock or open garage stands out in a warning color.
+- **One tap, from anywhere.** Lights, switches, fans, shades, scripts, scenes, buttons and media players respond to a single tap, on every page.
+- **Live state.** A button lights up while its entity is on or open, dims while it's unavailable, and shows a tap as pending until Home Assistant confirms it.
+- **Safe by default.** Locks, garage doors and gates need a long press. A tap only says *Hold to unlock*, and an unlocked lock or open garage stands out in a warning color.
 - **No token to manage.** Kiosk Satellite calls Home Assistant through its own connection. The plugin never sees a token.
-- **Set up without typing.** Pick each entity from Kiosk Satellite's entity picker. Its name and icon fill themselves in, and you can change them.
-- **Any edge.** A rail down the right or left side, or a bar along the top or bottom. Long names wrap to two lines.
-- **Out of the way.** Set how translucent it is, swipe it away behind a small tab, and hide it on pages you choose.
-- **Light.** Native Android views, no WebView. Only the items that change are redrawn.
+- **Set up without typing.** Pick each entity from a list. Its name and icon fill themselves in, and you can change them.
+- **Fits your layout.** A rail down the right or left, or a bar along the top or bottom. Names wrap to two lines, or hide them for icons only.
+- **Light.** Native Android views, no WebView, and only the buttons that change are redrawn.
 
 ## Install
 
-Needs Kiosk Satellite **2026.10.25** or newer, and Home Assistant set up in Kiosk Satellite.
+You need Kiosk Satellite **2026.10.25** or newer, connected to Home Assistant.
 
 1. In Kiosk Satellite, open **Settings > Plugin Manager > Add plugin**.
 2. Paste `https://github.com/dimatx/kiosk-satellite-action-bar`, tap **Preview**, then **Trust and install**.
-3. Turn on **Action Bar**, open it and add items under **Items**.
+3. Turn on **Action Bar**, open it and tap **Add item**.
+4. Pick an entity and tap **Save**. Its button appears on the right edge of the screen.
 
-Settings are on the plugin's page, on the kiosk or in Remote Admin, and take effect as you save them.
+Settings are on the plugin's page, on the kiosk or in Remote Admin, and take effect as soon as you save them.
+
+## Adding items
+
+<p align="center"><img src="docs/images/editor.png" alt="Editing an item" width="420"></p>
+
+Each item is one Home Assistant entity, with up to 16 items.
+
+- **Entity.** Pick it from the list.
+- **Label.** Leave it empty and the entity's name is filled in for you.
+- **Icon** and **Icon when on.** Leave them empty and icons for the entity's kind are filled in, such as a closed and an open lock. Home Assistant's own icon is used when it's a Material Design Icon.
+
+Drag items by their handle, or use the arrows in Remote Admin, to change their order.
 
 ## What a tap does
 
 | Entity | A tap |
 | --- | --- |
-| Light, switch, fan, input boolean, automation, siren, humidifier | Toggles it |
-| Cover (shades, blinds, curtains) | Opens it when closed, closes it when open, and stops it while it moves |
-| Cover (garage door, gate, door) | Same, but on a long press |
+| Light, switch, fan, input boolean, automation, siren, humidifier | Turns it on or off |
+| Shade, blind, curtain or other cover | Opens it when closed, closes it when open, and stops it while it moves |
+| Garage door, gate or door cover | The same, on a long press |
 | Lock | Locks or unlocks it, on a long press |
 | Script | Starts it, without waiting for it to finish |
 | Scene | Activates it |
 | Button, input button | Presses it |
 | Media player | Plays or pauses it |
-| Anything else | Nothing. The item still shows the entity's state |
+| Anything else, such as a sensor | Nothing. The button still shows the entity's state |
 
-A tap is sent once and never retried, because a call that timed out may still have reached Home Assistant. If a call fails, the plugin page says why. An item whose entity is unavailable ignores taps.
-
-**Hold for locks and garage doors** is on by default. Turn it off and those act on a tap too. A long press works on every item.
+A tap is sent once and never retried, because a call that timed out may still have reached Home Assistant. If a call fails, the plugin's page says why. A button whose entity is unavailable ignores taps. A long press works on every button.
 
 ## Settings
 
+<details>
+<summary><b>All settings</b></summary>
+
+<p align="center"><img src="docs/images/settings.png" alt="The Action Bar settings page" width="480"></p>
+
 | Setting | What it does |
 | --- | --- |
-| Position | Right, Left, Top or Bottom. Right and Left make a vertical rail |
-| Labels | Always or Never |
+| Position | Right, Left, Top or Bottom. Right and Left make a rail |
+| Labels | Always, or Never for icons only |
 | Size | 80% to 140% |
 | Opacity | How much of the dashboard shows through |
-| Items | Up to 16 entities, each with an optional label, icon and icon when on |
-| Hold for locks and garage doors | Locks, garage doors and gates act on a long press. On by default |
+| Items | Up to 16 entities |
+| Hold for locks and garage doors | Locks, garage doors and gates act on a long press. On by default. Turn it off and they act on a tap |
 | Swipe to hide | Start visible, Start hidden or Off |
 | Hide after | Seconds without a tap before the bar hides. 0 keeps it visible |
 | Keep the dashboard clear | The dashboard ends beside the bar instead of under it. On by default |
 | Hide the bar on | Pages where the bar stays hidden, picked from your dashboards |
 
-Leave **Label** or **Icon** empty and the bar uses the entity's name and an icon for its kind, then saves them so you can see and change them. Icons from Home Assistant icon packs other than Material Design Icons aren't available to Kiosk Satellite plugins, so those entities get an icon for their kind instead.
+</details>
+
+<details>
+<summary><b>Hiding the bar</b></summary>
+
+Swipe the bar toward its edge to hide it behind a small tab. Swipe the tab back, or tap it, to show the bar again. While the bar is hidden, the dashboard keeps clear of the tab only.
 
 **Show action bar**, **Hide action bar** and **Toggle action bar** can be mapped to a gesture or added to the kiosk drawer, under the plugin's **Actions**.
+
+</details>
+
+<details>
+<summary><b>Questions</b></summary>
+
+**A button shows a generic icon instead of the one in Home Assistant.** Icons from community icon packs, such as `phu:`, aren't available to Kiosk Satellite plugins, so the bar uses an icon for the entity's kind. Pick another icon for the item to change it.
+
+**The plugin's page says an entity was not found.** Kiosk Satellite's Home Assistant user can't see it, or it was renamed. Pick the entity again.
+
+**Does it work with the navbar?** Yes. Put the navbar along the bottom and the action bar on the right, and the dashboard keeps clear of both.
+
+</details>
 
 <details>
 <summary><b>Build from source</b></summary>
@@ -72,7 +112,7 @@ python3 tools/test.py
 python3 tools/build.py
 ```
 
-`tools/test.py` runs the logic tests and drives the controller with a virtual clock and a fake host that records every Home Assistant call. `python3 tools/test_views.py --serial <adb-device-serial>` measures the native views on an adb-connected development device without installing an app.
+`tools/test.py` runs the logic tests and drives the plugin with a virtual clock and a fake host that records every Home Assistant call. `python3 tools/test_views.py --serial <adb-device-serial>` measures the native views on an adb-connected development device without installing an app.
 
 The ZIP lands in `dist/`. Install it with **Plugin Manager > Developer Tools > Install from ZIP**. To release, publish a GitHub release tagged `vX.Y.Z`. CI tests, builds and attaches the files Kiosk Satellite verifies. See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
@@ -80,7 +120,7 @@ The ZIP lands in `dist/`. Install it with **Plugin Manager > Developer Tools > I
 
 ## Credits
 
-Built for [Kiosk Satellite](https://github.com/jxlarrea/kiosk-satellite) by [@jxlarrea](https://github.com/jxlarrea), whose plugin SDK, overlays, pickers, icons and Home Assistant access make a bar like this possible. Started from the [Kiosk Satellite plugin template](https://github.com/jxlarrea/kiosk-satellite-plugin-hello-world) and shares its overlay work with [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar). Plugin SDK limits found along the way are tracked in [docs/sdk-gaps.md](docs/sdk-gaps.md).
+Built for [Kiosk Satellite](https://github.com/jxlarrea/kiosk-satellite) by [@jxlarrea](https://github.com/jxlarrea), whose plugin SDK, overlays, pickers, icons and Home Assistant access make a bar like this possible. Started from the [Kiosk Satellite plugin template](https://github.com/jxlarrea/kiosk-satellite-plugin-hello-world), and shares its overlay work with [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar). Plugin SDK limits found along the way are tracked in [docs/sdk-gaps.md](docs/sdk-gaps.md).
 
 ## License
 

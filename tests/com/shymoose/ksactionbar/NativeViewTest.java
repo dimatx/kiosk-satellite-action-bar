@@ -66,9 +66,9 @@ public final class NativeViewTest {
                     root.hint(5, "Hold to unlock");
                     measure(root, theme.px(480), theme.px(480));
                     check(root.getMeasuredWidth() == width && root.getMeasuredHeight() == height, "a hint never resizes the bar");
-                    // A one-line name with a hint that would need two lines.
-                    List<Tile> short_ = tiles(16, 3);
-                    short_.set(6, new Tile("Fan", "mdi:fan", false, false, false, false, "Fan"));
+                    // Short names everywhere, then a hint wider than any of them.
+                    List<Tile> short_ = new ArrayList<>();
+                    for (int i = 0; i < 16; i++) short_.add(new Tile("Fan", "mdi:fan", false, false, false, false, "Fan"));
                     root.setTiles(short_);
                     measure(root, theme.px(480), theme.px(480));
                     int shortWidth = root.getMeasuredWidth(), shortHeight = root.getMeasuredHeight();

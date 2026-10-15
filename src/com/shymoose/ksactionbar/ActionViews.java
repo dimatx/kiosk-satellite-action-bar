@@ -35,6 +35,8 @@ final class ActionViews {
     /** The widest a label gets before it wraps, in dp at 100%. */
     /** The widest a label gets before it wraps, in dp at 100%. */
     static final int LABEL_DP = 70;
+    /** Space between items along the bar, in dp at 100%. */
+    static final int ITEM_GAP_DP = 8;
     static final long HINT_MS = 1600;
 
     /** What the plugin hears from the bar. All calls arrive on the main thread. */
@@ -267,7 +269,7 @@ final class ActionViews {
 
         void setTiles(List<Tile> tiles) { bar.setTiles(tiles); }
 
-        void hint(int index, String text) { bar.hint(index, text); }
+        void hint(int index, String text) { bar.hint(index, text, "Hold"); }
 
         @Override protected void onAttachedToWindow() {
             super.onAttachedToWindow();
@@ -450,28 +452,24 @@ final class ActionViews {
             }
         }
 
-        /** Shows {@code text} in place of an item's label for a moment, such as "Hold to unlock". */
-        void hint(int index, String text) {
+        /**
+         * Shows {@code text} in place of an item's label for a moment, such as "Hold to unlock".
+         * Labels have a fixed width, and a hint that would need more lines than the name falls back
+         * to {@code shortText}, so the hint never resizes the bar.
+         */
+        void hint(int index, String text, String shortText) {
             if (index < 0 || index >= cells.size()) return;
             TextView label = labels.get(index);
             Runnable end = hintEnds.get(index);
             if (end != null) removeCallbacks(end);
             if (config.labels) {
-                // Keep the label's size, so the hint never resizes the bar.
-                label.setMinWidth(label.getWidth());
-                label.setMinHeight(label.getHeight());
-                // Never more lines than the name had, so the hint cannot make the bar taller.
-                label.setMaxLines(Math.max(1, label.getLineCount()));
-                label.setMaxWidth(Math.max(label.getWidth(), theme.px(LABEL_DP * config.scale)));
-                label.setText(text);
+                float room = label.getWidth() - label.getPaddingLeft() - label.getPaddingRight();
+                boolean fits = label.getLineCount() >= 2 || label.getPaint().measureText(text) <= room;
+                label.setText(fits ? text : shortText);
             }
             cells.get(index).setContentDescription(text);
             Runnable restore = () -> {
                 hintEnds.set(index, null);
-                label.setMinWidth(0);
-                label.setMinHeight(0);
-                label.setMaxLines(2);
-                label.setMaxWidth(theme.px(LABEL_DP * config.scale));
                 Tile tile = tiles.get(index);
                 if (tile != null) {
                     label.setText(tile.label);
@@ -532,6 +530,13 @@ final class ActionViews {
             else setPadding(px(8 * s), px(6 * s), px(8 * s), px(6 * s));
             for (int i = 0; i < cells.size(); i++) {
                 LinearLayout cell = cells.get(i);
+                // A gap between items, so each reads as its own button.
+                LinearLayout.LayoutParams spaced = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                if (i > 0) {
+                    if (config.vertical) spaced.topMargin = px(ITEM_GAP_DP * s);
+                    else spaced.leftMargin = px(ITEM_GAP_DP * s);
+                }
+                cell.setLayoutParams(spaced);
                 cell.setBackground(pressable(theme, null, radii(px(theme.radiusRow()))));
                 cell.setMinimumWidth(px(Math.max(MIN_TOUCH_DP, 52 * s)));
                 cell.setMinimumHeight(px(MIN_TOUCH_DP));
@@ -545,7 +550,10 @@ final class ActionViews {
                 icons.get(i).setLayoutParams(glyph);
                 TextView label = labels.get(i);
                 theme.styleText(label, 12 * s, 500, "onSurfaceVariant");
-                label.setMaxWidth(px(LABEL_DP * s));
+                // Every label has the same width, so tiles line up and no name or hint can make the
+                // bar wider. Heights follow the names, up to two lines.
+                label.setWidth(px(LABEL_DP * s));
+                label.setMaxLines(2);
                 LinearLayout.LayoutParams spacing = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
                 spacing.topMargin = px(4 * s);
                 label.setLayoutParams(spacing);

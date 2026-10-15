@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Buttons have more space between them, so each reads as its own button.
+- Every button has the same width, so the rail stays straight and a name or a *Hold to unlock* hint never resizes it. A hint too wide for a one-line name shows *Hold*.
+- The README has screenshots and a walkthrough for new users.
+
 ## 0.1.0
 
 First release. Needs Kiosk Satellite 2026.10.25 or newer.
