@@ -66,6 +66,15 @@ public final class NativeViewTest {
                     root.hint(5, "Hold to unlock");
                     measure(root, theme.px(480), theme.px(480));
                     check(root.getMeasuredWidth() == width && root.getMeasuredHeight() == height, "a hint never resizes the bar");
+                    // A one-line name with a hint that would need two lines.
+                    List<Tile> short_ = tiles(16, 3);
+                    short_.set(6, new Tile("Fan", "mdi:fan", false, false, false, false, "Fan"));
+                    root.setTiles(short_);
+                    measure(root, theme.px(480), theme.px(480));
+                    int shortWidth = root.getMeasuredWidth(), shortHeight = root.getMeasuredHeight();
+                    root.hint(6, "Hold to unlock");
+                    measure(root, theme.px(480), theme.px(480));
+                    check(root.getMeasuredWidth() == shortWidth && root.getMeasuredHeight() == shortHeight, "a long hint on a short name never resizes the bar");
                     root.setCollapsed(true);
                     measure(root, theme.px(480), theme.px(480));
                     View tab = root.getChildAt(edge.equals("Left") || edge.equals("Top") ? 0 : 1);

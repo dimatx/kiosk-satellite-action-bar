@@ -32,7 +32,9 @@ final class ActionViews {
     private ActionViews() {}
 
     static final int MIN_TOUCH_DP = 48;
-    /** How long a "Hold to unlock" hint replaces an item's label. */
+    /** The widest a label gets before it wraps, in dp at 100%. */
+    /** The widest a label gets before it wraps, in dp at 100%. */
+    static final int LABEL_DP = 70;
     static final long HINT_MS = 1600;
 
     /** What the plugin hears from the bar. All calls arrive on the main thread. */
@@ -458,7 +460,9 @@ final class ActionViews {
                 // Keep the label's size, so the hint never resizes the bar.
                 label.setMinWidth(label.getWidth());
                 label.setMinHeight(label.getHeight());
-                label.setMaxWidth(Math.max(label.getWidth(), theme.px(80 * config.scale)));
+                // Never more lines than the name had, so the hint cannot make the bar taller.
+                label.setMaxLines(Math.max(1, label.getLineCount()));
+                label.setMaxWidth(Math.max(label.getWidth(), theme.px(LABEL_DP * config.scale)));
                 label.setText(text);
             }
             cells.get(index).setContentDescription(text);
@@ -466,7 +470,8 @@ final class ActionViews {
                 hintEnds.set(index, null);
                 label.setMinWidth(0);
                 label.setMinHeight(0);
-                label.setMaxWidth(theme.px(88 * config.scale));
+                label.setMaxLines(2);
+                label.setMaxWidth(theme.px(LABEL_DP * config.scale));
                 Tile tile = tiles.get(index);
                 if (tile != null) {
                     label.setText(tile.label);
@@ -528,19 +533,19 @@ final class ActionViews {
             for (int i = 0; i < cells.size(); i++) {
                 LinearLayout cell = cells.get(i);
                 cell.setBackground(pressable(theme, null, radii(px(theme.radiusRow()))));
-                cell.setMinimumWidth(px(Math.max(MIN_TOUCH_DP, 64 * s)));
+                cell.setMinimumWidth(px(Math.max(MIN_TOUCH_DP, 52 * s)));
                 cell.setMinimumHeight(px(MIN_TOUCH_DP));
-                cell.setPadding(px(6 * s), px(6 * s), px(6 * s), px(6 * s));
+                cell.setPadding(px(5 * s), px(6 * s), px(5 * s), px(6 * s));
                 indicators.get(i).setCornerRadius(px(16 * s));
                 View frame = (View) icons.get(i).getParent();
-                frame.setLayoutParams(new LinearLayout.LayoutParams(px(56 * s), px(32 * s)));
+                frame.setLayoutParams(new LinearLayout.LayoutParams(px(46 * s), px(32 * s)));
                 FrameLayout.LayoutParams glyph = (FrameLayout.LayoutParams) icons.get(i).getLayoutParams();
                 glyph.width = px(24 * s);
                 glyph.height = px(24 * s);
                 icons.get(i).setLayoutParams(glyph);
                 TextView label = labels.get(i);
                 theme.styleText(label, 12 * s, 500, "onSurfaceVariant");
-                label.setMaxWidth(px(88 * s));
+                label.setMaxWidth(px(LABEL_DP * s));
                 LinearLayout.LayoutParams spacing = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
                 spacing.topMargin = px(4 * s);
                 label.setLayoutParams(spacing);
