@@ -4,10 +4,10 @@
 
 <p align="center"><img src="docs/images/rail.png" alt="The action bar as a rail on the right of a dashboard" width="720"></p>
 
-| Along the bottom | Hold to unlock | Hidden |
+| Along the bottom | Shades and locks | Hidden |
 | :---: | :---: | :---: |
-| <img src="docs/images/bottom.png" alt="The action bar along the bottom" width="260"> | <img src="docs/images/hint.png" alt="A tap on a lock shows Hold to lock" width="150"> | <img src="docs/images/tab.png" alt="The bar hidden behind a tab" width="260"> |
-| A bar along the top or bottom | A tap on a lock only says what a long press does | Swipe it away behind a small tab |
+| <img src="docs/images/bottom.png" alt="The action bar along the bottom" width="260"> | <img src="docs/images/menu-cover.png" alt="The menu for a shade, with Open, Stop and Close and a position slider" width="150"> <img src="docs/images/menu-lock.png" alt="The menu for a lock, with Lock and Unlock" width="100"> | <img src="docs/images/tab.png" alt="The bar hidden behind a tab" width="260"> |
+| A bar along the top or bottom | A tap opens a menu beside the button | Swipe it away behind a small tab |
 
 A companion to [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar): the navbar moves between pages, the action bar acts in place.
 
@@ -15,7 +15,7 @@ A companion to [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-sate
 
 - **One tap, from anywhere.** Lights, switches, fans, shades, scripts, scenes, buttons and media players respond to a single tap, on every page.
 - **Live state.** A button lights up while its entity is on or open, dims while it's unavailable, and shows a tap as pending until Home Assistant confirms it.
-- **Safe by default.** Locks, garage doors and gates need a long press. A tap only says *Hold to unlock*, and an unlocked lock or open garage stands out in a warning color.
+- **Menus for shades and locks.** A tap on a shade opens Open, Stop and Close with a slider for its position. A tap on a lock opens Lock and Unlock. Nothing moves until you choose, and an unlocked lock or open garage stands out in a warning color.
 - **No token to manage.** Kiosk Satellite calls Home Assistant through its own connection. The plugin never sees a token.
 - **Set up without typing.** Pick each entity from a list. Its name and icon fill themselves in, and you can change them.
 - **Fits your layout.** A rail down the right or left, or a bar along the top or bottom. Names wrap to two lines, or hide them for icons only.
@@ -49,16 +49,19 @@ Drag items by their handle, or use the arrows in Remote Admin, to change their o
 | Entity | A tap |
 | --- | --- |
 | Light, switch, fan, input boolean, automation, siren, humidifier | Turns it on or off |
-| Shade, blind, curtain or other cover | Opens it when closed, closes it when open, and stops it while it moves |
-| Garage door, gate or door cover | The same, on a long press |
-| Lock | Locks or unlocks it, on a long press |
+| Shade, blind, curtain, garage door, gate or other cover | Opens a menu with Open, Stop and Close, and a slider for its position when the cover reports one |
+| Lock | Opens a menu with Lock and Unlock |
 | Script | Starts it, without waiting for it to finish |
 | Scene | Activates it |
 | Button, input button | Presses it |
 | Media player | Plays or pauses it |
 | Anything else, such as a sensor | Nothing. The button still shows the entity's state |
 
-A tap is sent once and never retried, because a call that timed out may still have reached Home Assistant. If a call fails, the plugin's page says why. A button whose entity is unavailable ignores taps. A long press works on every button.
+A menu opens beside its button, with the buttons nearest the bar. Beside a rail it stands upright, with the slider open at the top. Above or below a bar it lies flat. The current state is highlighted and stays live while the menu is open. A choice acts and closes the menu, letting go of the slider moves the cover and keeps the menu open, and a tap anywhere else closes it. A menu also closes after 30 seconds without a touch.
+
+A long press acts at once, without a menu: on a cover it opens, closes or stops it, and on a lock it locks or unlocks it. On any other button a long press does the same as a tap.
+
+A call is sent once and never retried, because a call that timed out may still have reached Home Assistant. If a call fails, the plugin's page says why. A button whose entity is unavailable ignores taps.
 
 ## Settings
 
@@ -74,7 +77,6 @@ A tap is sent once and never retried, because a call that timed out may still ha
 | Size | 80% to 140% |
 | Opacity | How much of the dashboard shows through |
 | Items | Up to 16 entities |
-| Hold for locks and garage doors | Locks, garage doors and gates act on a long press. On by default. Turn it off and they act on a tap |
 | Swipe to hide | Start visible, Start hidden or Off |
 | Hide after | Seconds without a tap before the bar hides. 0 keeps it visible |
 | Keep the dashboard clear | The dashboard ends beside the bar instead of under it. On by default |

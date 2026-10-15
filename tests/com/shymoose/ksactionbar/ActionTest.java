@@ -59,17 +59,46 @@ public final class ActionTest {
     }
 
     private static void looks() {
-        // A tap alone never moves locks, garage doors, gates or doors. Shades and lights move on a tap.
-        check(Actions.needsHold("lock.front", state("locked", null, 0)));
-        check(Actions.needsHold("cover.garage", state("closed", "garage", 0)));
-        check(Actions.needsHold("cover.gate", state("closed", "gate", 0)));
-        check(!Actions.needsHold("cover.shade", state("closed", "shade", 0)));
-        check(!Actions.needsHold("cover.unknown_class", state("closed", null, 0)));
-        check(!Actions.needsHold("light.kitchen", state("on", null, 0)));
-        eq("Hold to unlock", Actions.holdHint("lock.front", state("locked", null, 0)));
-        eq("Hold to lock", Actions.holdHint("lock.front", state("unlocked", null, 0)));
-        eq("Hold to open", Actions.holdHint("cover.garage", state("closed", "garage", 0)));
-        eq("Hold to close", Actions.holdHint("cover.garage", state("open", "garage", 0)));
+        // Covers and locks open a menu; everything else acts on a tap.
+        check(Actions.hasMenu("cover.shade"));
+        check(Actions.hasMenu("lock.front"));
+        check(!Actions.hasMenu("light.kitchen"));
+        check(!Actions.hasMenu("script.x"));
+        // A cover with open, close, position and stop offers all three buttons and a slider.
+        List<Actions.Choice> shade = Actions.choices("cover.shade", positioned("open", "shade", 15, 40));
+        eq(3, shade.size());
+        eq("Open", shade.get(0).label);
+        check(shade.get(0).current);
+        eq("Stop", shade.get(1).label);
+        eq("Close", shade.get(2).label);
+        check(!shade.get(2).current);
+        eq("cover.close_cover", shade.get(2).call.toString());
+        eq("mdi:blinds-open", shade.get(0).icon);
+        check(Actions.hasPosition("cover.shade", positioned("open", "shade", 15, 40)));
+        eq("Open \u00b7 40%", Actions.describe("cover.shade", positioned("open", "shade", 15, 40)));
+        // Without stop or position, only open and close, and no slider.
+        List<Actions.Choice> garage = Actions.choices("cover.garage", positioned("closed", "garage", 3, null));
+        eq(2, garage.size());
+        check(garage.get(1).current);
+        eq("mdi:garage-open", garage.get(0).icon);
+        check(!Actions.hasPosition("cover.garage", positioned("closed", "garage", 3, null)));
+        // A cover that reports no features is still offered open and close.
+        eq(2, Actions.choices("cover.basic", positioned("open", null, 0, null)).size());
+        // Locks offer both, with the current state marked.
+        List<Actions.Choice> lock = Actions.choices("lock.front", state("unlocked", null, 0));
+        eq(2, lock.size());
+        eq("Lock", lock.get(0).label);
+        check(!lock.get(0).current);
+        check(lock.get(1).current);
+        eq("lock.unlock", lock.get(1).call.toString());
+        eq("Unlocked", Actions.describe("lock.front", state("unlocked", null, 0)));
+        check(Actions.choices("light.kitchen", state("on", null, 0)).isEmpty());
+        // Positions are clamped and sent as service data.
+        Map<String, Object> move = Actions.position(140).message("cover.shade");
+        eq("set_cover_position", move.get("service"));
+        eq(100, ((Map<?, ?>) move.get("service_data")).get("position"));
+        eq(0, ((Map<?, ?>) Actions.position(-5).message("cover.shade").get("service_data")).get("position"));
+        check(!new Actions.Call("light", "toggle", "switch").message("light.a").containsKey("service_data"));
 
         check(Actions.active("light.a", state("on", null, 0)));
         check(!Actions.active("light.a", state("off", null, 0)));
@@ -158,7 +187,6 @@ public final class ActionTest {
         eq(ActionConfig.Edge.RIGHT, empty.edge);
         check(empty.vertical);
         check(empty.labels);
-        check(empty.holdToConfirm);
         check(empty.makeRoom);
         eq(ActionConfig.Collapse.START_OPEN, empty.collapse);
         check(!empty.visibleAt("/x"));
@@ -168,7 +196,6 @@ public final class ActionTest {
         settings.put("labels", "Never");
         settings.put("scale", "120%");
         settings.put("opacity", 70.0);
-        settings.put("holdToConfirm", false);
         settings.put("collapse", "Off");
         settings.put("autoCollapse", 30.0);
         settings.put("hideOn", Arrays.asList(page("lovelace/settings")));
@@ -183,7 +210,6 @@ public final class ActionTest {
         check(!cfg.labels);
         eq(1.2f, cfg.scale);
         eq(0.7f, cfg.opacity);
-        check(!cfg.holdToConfirm);
         eq(0, cfg.autoCollapse);
         eq(ActionConfig.MAX_ITEMS, cfg.items.size());
         eq(1, cfg.problems.size());
@@ -206,6 +232,10 @@ public final class ActionTest {
     private static String call(String entity, String value, String deviceClass, int features) {
         Actions.Call call = Actions.call(entity, state(value, deviceClass, features));
         return String.valueOf(call);
+    }
+
+    private static EntityState positioned(String value, String deviceClass, int features, Integer position) {
+        return new EntityState("available", value, null, null, deviceClass, features, "t", position);
     }
 
     private static EntityState state(String value, String deviceClass, int features) {

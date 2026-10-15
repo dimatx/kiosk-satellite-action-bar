@@ -29,14 +29,13 @@ final class ActionConfig {
     /** Seconds without a tap before an open bar hides. 0 never does. */
     final int autoCollapse;
     final boolean makeRoom;
-    final boolean holdToConfirm;
     final List<String> hideOn;
     final List<ActionItem> items;
     /** One line per row that could not be used. */
     final List<String> problems;
 
     private ActionConfig(Edge edge, boolean labels, float scale, float opacity, Collapse collapse, int autoCollapse,
-                         boolean makeRoom, boolean holdToConfirm, List<String> hideOn, List<ActionItem> items, List<String> problems) {
+                         boolean makeRoom, List<String> hideOn, List<ActionItem> items, List<String> problems) {
         this.edge = edge;
         this.vertical = edge == Edge.LEFT || edge == Edge.RIGHT;
         this.labels = labels;
@@ -45,7 +44,6 @@ final class ActionConfig {
         this.collapse = collapse;
         this.autoCollapse = autoCollapse;
         this.makeRoom = makeRoom;
-        this.holdToConfirm = holdToConfirm;
         this.hideOn = Collections.unmodifiableList(hideOn);
         this.items = Collections.unmodifiableList(items);
         this.problems = Collections.unmodifiableList(problems);
@@ -84,8 +82,7 @@ final class ActionConfig {
             }
         }
         boolean makeRoom = !Boolean.FALSE.equals(settings.get("makeRoom"));
-        boolean holdToConfirm = !Boolean.FALSE.equals(settings.get("holdToConfirm"));
-        return new ActionConfig(edge, labels, scale, opacity, collapse, autoCollapse, makeRoom, holdToConfirm, hideOn, items, problems);
+        return new ActionConfig(edge, labels, scale, opacity, collapse, autoCollapse, makeRoom, hideOn, items, problems);
     }
 
     /** Whether the bar belongs on {@code path}. It shows everywhere except the Hide the bar on pages. */

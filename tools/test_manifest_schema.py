@@ -72,7 +72,7 @@ class ManifestSchemaTest(unittest.TestCase):
 
     def test_keys_match_the_code(self):
         keys = {s['key'] for s in MANIFEST['settings']}
-        for key in ('position', 'labels', 'hideOn', 'scale', 'opacity', 'collapse', 'autoCollapse', 'makeRoom', 'holdToConfirm', 'items'):
+        for key in ('position', 'labels', 'hideOn', 'scale', 'opacity', 'collapse', 'autoCollapse', 'makeRoom', 'items'):
             self.assertIn(key, keys)
             self.assertIn(f'"{key}"', SOURCES['ActionConfig'])
         items = next(s for s in MANIFEST['settings'] if s['key'] == 'items')

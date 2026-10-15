@@ -18,6 +18,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,6 @@ final class ActionViews {
     static final int LABEL_DP = 70;
     /** Space between items along the bar, in dp at 100%. */
     static final int ITEM_GAP_DP = 8;
-    static final long HINT_MS = 1600;
 
     /** What the plugin hears from the bar. All calls arrive on the main thread. */
     interface Listener {
@@ -296,7 +296,24 @@ final class ActionViews {
 
         void setTiles(List<Tile> tiles) { bar.setTiles(tiles); }
 
-        void hint(int index, String text) { bar.hint(index, text, "Hold"); }
+        /** Marks the item whose menu is open, or none for -1. */
+        void setOpenMenu(int index) { bar.setOpen(index); }
+
+        /**
+         * How far an item's center is from this view's center along the bar, in dp. The bar's overlay
+         * is centered on its edge like a menu's, so this places a menu over its item.
+         */
+        int itemOffsetDp(int index) {
+            float offset = config.vertical
+                ? viewport.getTop() + bar.getTop() + bar.itemCenter(index) - viewport.getScrollY() - getHeight() / 2f
+                : viewport.getLeft() + bar.getLeft() + bar.itemCenter(index) - viewport.getScrollX() - getWidth() / 2f;
+            return Math.round(offset / getResources().getDisplayMetrics().density);
+        }
+
+        /** How far this view reaches from its edge, in dp. */
+        int depthDp() {
+            return Math.round((config.vertical ? getWidth() : getHeight()) / getResources().getDisplayMetrics().density);
+        }
 
         @Override protected void onAttachedToWindow() {
             super.onAttachedToWindow();
@@ -427,8 +444,9 @@ final class ActionViews {
         private final List<TextView> labels = new ArrayList<>();
         private final List<String> drawnIcons = new ArrayList<>();
         private final List<Tile> tiles = new ArrayList<>();
-        private final List<Runnable> hintEnds = new ArrayList<>();
         private KsTheme theme;
+        /** The item whose menu is open, or -1. */
+        private int open = -1;
 
         Bar(Context context, KsTheme theme, ActionConfig config, List<Tile> initial, Listener listener) {
             super(context);
@@ -448,7 +466,7 @@ final class ActionViews {
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 indicator.addView(icon, new FrameLayout.LayoutParams(0, 0, Gravity.CENTER));
                 TextView label = new TextView(context);
-                // Two lines, so names like "His office desk light" fit without widening the bar.
+                // Two lines, so names like "Living room ceiling light" fit without widening the bar.
                 label.setSingleLine(false);
                 label.setMaxLines(2);
                 label.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -473,7 +491,6 @@ final class ActionViews {
                 labels.add(label);
                 drawnIcons.add(null);
                 tiles.add(null);
-                hintEnds.add(null);
             }
             restyle(theme);
             setTiles(initial);
@@ -489,37 +506,18 @@ final class ActionViews {
             }
         }
 
-        /**
-         * Shows {@code text} in place of an item's label for a moment, such as "Hold to unlock".
-         * Labels have a fixed width, and a hint that would need more lines than the name falls back
-         * to {@code shortText}, so the hint never resizes the bar.
-         */
-        void hint(int index, String text, String shortText) {
-            if (index < 0 || index >= cells.size()) return;
-            TextView label = labels.get(index);
-            Runnable end = hintEnds.get(index);
-            if (end != null) removeCallbacks(end);
-            if (config.labels) {
-                float room = label.getWidth() - label.getPaddingLeft() - label.getPaddingRight();
-                boolean fits = label.getLineCount() >= 2 || label.getPaint().measureText(text) <= room;
-                label.setText(fits ? text : shortText);
-            }
-            cells.get(index).setContentDescription(text);
-            Runnable restore = () -> {
-                hintEnds.set(index, null);
-                Tile tile = tiles.get(index);
-                if (tile != null) {
-                    label.setText(tile.label);
-                    cells.get(index).setContentDescription(tile.description);
-                }
-            };
-            hintEnds.set(index, restore);
-            postDelayed(restore, HINT_MS);
+        void setOpen(int index) {
+            if (index == open) return;
+            int previous = open;
+            open = index;
+            if (previous >= 0 && previous < cells.size()) apply(previous);
+            if (open >= 0 && open < cells.size()) apply(open);
         }
 
-        @Override protected void onDetachedFromWindow() {
-            for (Runnable end : hintEnds) if (end != null) removeCallbacks(end);
-            super.onDetachedFromWindow();
+        /** The center of an item along the bar, relative to the bar. */
+        float itemCenter(int index) {
+            View cell = cells.get(index);
+            return config.vertical ? cell.getTop() + cell.getHeight() / 2f : cell.getLeft() + cell.getWidth() / 2f;
         }
 
         private void apply(int i) {
@@ -531,7 +529,8 @@ final class ActionViews {
             int onWarn = color(theme, "onErrorContainer", "onSurface");
             int off = theme.color("onSurfaceVariant");
             int fill = tile.attention ? warn : tile.active ? pill : Color.TRANSPARENT;
-            if (tile.pending && !tile.active) fill = Color.argb(110, Color.red(pill), Color.green(pill), Color.blue(pill));
+            // A tap waiting for Home Assistant, or an open menu, gets a lighter pill.
+            if ((tile.pending || i == open) && fill == Color.TRANSPARENT) fill = Color.argb(110, Color.red(pill), Color.green(pill), Color.blue(pill));
             indicators.get(i).setColor(fill);
             // Dimmed through colors, not View.setAlpha: on KS's texture-backed overlays an alpha
             // change alone never reached the screen (navbar SDK gap 16).
@@ -546,10 +545,8 @@ final class ActionViews {
                 icon.invalidate();
             }
             TextView label = labels.get(i);
-            if (hintEnds.get(i) == null) {
-                label.setText(tile.label);
-                cells.get(i).setContentDescription(tile.description);
-            }
+            label.setText(tile.label);
+            cells.get(i).setContentDescription(tile.description);
             label.setTextColor(fade(tile.active || tile.attention ? theme.color("onSurface") : off, strength));
             cells.get(i).setSelected(tile.active);
             cells.get(i).invalidate();
@@ -600,6 +597,297 @@ final class ActionViews {
         }
 
         private int px(float dp) { return theme.px(dp); }
+    }
+
+    /** What the plugin hears from an open menu. All calls arrive on the main thread. */
+    interface MenuListener {
+        /** A button was tapped. */
+        void onChoice(int index);
+        /** The slider was released at {@code percent}, 0 closed to 100 open. */
+        void onPosition(int percent);
+        /** Any touch, so the menu's timeout starts over. */
+        void onMenuTouch();
+    }
+
+    /**
+     * A cover's or lock's controls on a card, in its own overlay over the item: the name and state,
+     * the buttons, and for covers that report a position, a slider from closed to open.
+     *
+     * Beside a rail the card is tall and narrow, like the rail: the buttons stack as a list and the
+     * slider stands upright, open at the top. Above or below a bar the buttons sit in a row and the
+     * slider lies flat, so the card takes little of the screen's height.
+     */
+    static final class MenuPanel extends FrameLayout {
+        private final ActionConfig config;
+        private final LinearLayout card;
+        private final TextView title;
+        private final TextView state;
+        private final List<LinearLayout> buttons = new ArrayList<>();
+        private final List<FrameLayout> pills = new ArrayList<>();
+        private final List<ImageView> buttonIcons = new ArrayList<>();
+        private final List<TextView> buttonLabels = new ArrayList<>();
+        private final SeekBar slider;
+        private final FrameLayout sliderBox;
+        private final LinearLayout body;
+        private final LinearLayout row;
+        private final TextView closedLabel;
+        private final TextView openLabel;
+        private final SizeGate gate = new SizeGate(this);
+        private List<Actions.Choice> choices;
+        private final MenuListener listener;
+        private boolean tracking;
+        private KsTheme theme;
+
+        MenuPanel(Context context, KsTheme theme, ActionConfig config, String name, String stateText,
+                  List<Actions.Choice> choices, Integer position, boolean hasPosition, MenuListener listener) {
+            super(context);
+            this.config = config;
+            this.theme = theme;
+            this.choices = choices;
+            this.listener = listener;
+            card = new LinearLayout(context);
+            card.setOrientation(LinearLayout.VERTICAL);
+            title = new TextView(context);
+            title.setText(name);
+            title.setSingleLine(true);
+            title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            title.setIncludeFontPadding(false);
+            state = new TextView(context);
+            state.setText(stateText);
+            state.setIncludeFontPadding(false);
+            card.addView(title);
+            card.addView(state);
+            boolean upright = config.vertical;
+            row = new LinearLayout(context);
+            row.setOrientation(upright ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER);
+            for (int i = 0; i < choices.size(); i++) {
+                final int index = i;
+                LinearLayout button = new LinearLayout(context);
+                // Built like the bar's own buttons: an icon pill above its name.
+                button.setOrientation(LinearLayout.VERTICAL);
+                button.setGravity(Gravity.CENTER);
+                FrameLayout pill = new FrameLayout(context);
+                pill.setBackground(new GradientDrawable());
+                ImageView icon = new ImageView(context);
+                icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                pill.addView(icon, new FrameLayout.LayoutParams(0, 0, Gravity.CENTER));
+                TextView label = new TextView(context);
+                label.setText(choices.get(i).label);
+                label.setGravity(Gravity.CENTER);
+                label.setMaxLines(2);
+                label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                button.addView(pill);
+                button.addView(label);
+                button.setContentDescription(choices.get(i).label);
+                button.setOnClickListener(view -> {
+                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                    listener.onChoice(index);
+                });
+                row.addView(button);
+                buttons.add(button);
+                pills.add(pill);
+                buttonIcons.add(icon);
+                buttonLabels.add(label);
+            }
+            // The buttons size to their content and the card grows around them, so none is squeezed.
+            body = new LinearLayout(context);
+            body.setOrientation(upright ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            rowParams.gravity = Gravity.CENTER_HORIZONTAL;
+            body.addView(row, rowParams);
+            card.addView(body, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+            if (hasPosition) {
+                slider = new SeekBar(context);
+                slider.setMax(100);
+                slider.setProgress(position == null ? 0 : position);
+                slider.setContentDescription("Position");
+                slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                    @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                        if (fromUser) state.setText(progress + "% open");
+                    }
+                    @Override public void onStartTrackingTouch(SeekBar bar) {
+                        tracking = true;
+                        listener.onMenuTouch();
+                    }
+                    @Override public void onStopTrackingTouch(SeekBar bar) {
+                        tracking = false;
+                        listener.onPosition(bar.getProgress());
+                    }
+                });
+                closedLabel = new TextView(context);
+                closedLabel.setText("Closed");
+                openLabel = new TextView(context);
+                openLabel.setText("Open");
+                if (upright) {
+                    // A SeekBar turned a quarter left: 0 at the bottom, 100 at the top. The view
+                    // transforms touches for its rotated child, so dragging follows the thumb.
+                    slider.setRotation(-90f);
+                    sliderBox = new FrameLayout(context);
+                    sliderBox.addView(slider);
+                    LinearLayout column = new LinearLayout(context);
+                    column.setOrientation(LinearLayout.VERTICAL);
+                    column.setGravity(Gravity.CENTER_HORIZONTAL);
+                    openLabel.setGravity(Gravity.CENTER);
+                    closedLabel.setGravity(Gravity.CENTER);
+                    column.addView(openLabel);
+                    column.addView(sliderBox);
+                    column.addView(closedLabel);
+                    // The buttons sit nearest the bar and the slider on the far side.
+                    body.setGravity(Gravity.CENTER_VERTICAL);
+                    body.addView(column, config.edge == ActionConfig.Edge.LEFT ? 1 : 0,
+                        new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+                } else {
+                    sliderBox = null;
+                    body.addView(slider);
+                    // Each name at its end of the slider. Natural widths, so neither wraps while the
+                    // card is still finding its width.
+                    FrameLayout ends = new FrameLayout(context);
+                    ends.addView(closedLabel, new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.START));
+                    ends.addView(openLabel, new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.END));
+                    body.addView(ends, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+                }
+            } else {
+                slider = null;
+                sliderBox = null;
+                closedLabel = null;
+                openLabel = null;
+            }
+            addView(card, new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+            restyle(theme);
+        }
+
+        /** Shows a new state while the menu is open. The slider stays put while a finger is on it. */
+        void update(String stateText, List<Actions.Choice> next, Integer position) {
+            if (!tracking) state.setText(stateText);
+            if (next.size() == choices.size()) {
+                choices = next;
+                applyChoices();
+            }
+            if (slider != null && !tracking && position != null) slider.setProgress(position);
+        }
+
+        @Override public boolean dispatchTouchEvent(MotionEvent event) {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                try { listener.onMenuTouch(); } catch (RuntimeException ignored) {}
+            }
+            return super.dispatchTouchEvent(event);
+        }
+
+        private void applyChoices() {
+            int pill = color(theme, "secondaryContainer", "primaryContainer");
+            int onPill = color(theme, "onSecondaryContainer", "onSurface");
+            int off = theme.color("onSurfaceVariant");
+            for (int i = 0; i < buttons.size(); i++) {
+                Actions.Choice choice = choices.get(i);
+                ((GradientDrawable) pills.get(i).getBackground()).setColor(choice.current ? pill : Color.TRANSPARENT);
+                setIcon(buttonIcons.get(i), theme, choice.icon, choice.current ? onPill : off);
+                buttonLabels.get(i).setTextColor(choice.current ? theme.color("onSurface") : off);
+                buttons.get(i).setSelected(choice.current);
+                buttons.get(i).invalidate();
+            }
+        }
+
+        void restyle(KsTheme next) {
+            theme = next;
+            float s = config.scale;
+            card.setBackground(surface(theme, Math.max(config.opacity, 0.95f)));
+            boolean upright = config.vertical;
+            // A cover's card beside a rail holds a slider and the buttons side by side, so it gets
+            // room to breathe. A lock's card stays compact.
+            boolean roomy = upright && slider != null;
+            int pad = theme.px((roomy ? 24 : 16) * s);
+            card.setPadding(pad, theme.px((roomy ? 18 : 14) * s), pad, theme.px((roomy ? 18 : 12) * s));
+            card.setMinimumWidth(upright ? theme.px((roomy ? 232 : 0) * s) : theme.px(240 * s));
+            body.setGravity(upright ? Gravity.CENTER : Gravity.NO_GRAVITY);
+            theme.styleText(title, 16 * s, 500, "onSurface");
+            theme.styleText(state, 13 * s, 400, "onSurfaceVariant");
+            title.setMaxWidth(theme.px(280 * s));
+            LinearLayout.LayoutParams stateParams = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            stateParams.topMargin = theme.px(4 * s);
+            stateParams.bottomMargin = theme.px(12 * s);
+            state.setLayoutParams(stateParams);
+            for (int i = 0; i < buttons.size(); i++) {
+                LinearLayout button = buttons.get(i);
+                LinearLayout.LayoutParams spaced = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                if (i > 0 && upright) spaced.topMargin = theme.px(ITEM_GAP_DP * s);
+                else if (i > 0) spaced.leftMargin = theme.px(ITEM_GAP_DP * s);
+                button.setLayoutParams(spaced);
+                button.setBackground(pressable(theme, null, radii(theme.px(theme.radiusRow()))));
+                // The bar's button sizes, so a menu button looks and feels like one on the bar.
+                button.setMinimumWidth(theme.px(Math.max(MIN_TOUCH_DP, 52 * s)));
+                button.setMinimumHeight(theme.px(MIN_TOUCH_DP));
+                button.setPadding(theme.px(5 * s), theme.px(6 * s), theme.px(5 * s), theme.px(6 * s));
+                ((GradientDrawable) pills.get(i).getBackground()).setCornerRadius(theme.px(16 * s));
+                pills.get(i).setLayoutParams(new LinearLayout.LayoutParams(theme.px(46 * s), theme.px(32 * s)));
+                FrameLayout.LayoutParams glyph = (FrameLayout.LayoutParams) buttonIcons.get(i).getLayoutParams();
+                glyph.width = theme.px(24 * s);
+                glyph.height = theme.px(24 * s);
+                buttonIcons.get(i).setLayoutParams(glyph);
+                theme.styleText(buttonLabels.get(i), 12 * s, 500, "onSurfaceVariant");
+                buttonLabels.get(i).setWidth(theme.px(LABEL_DP * s));
+                LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                labelParams.topMargin = theme.px(4 * s);
+                buttonLabels.get(i).setLayoutParams(labelParams);
+            }
+            if (slider != null) {
+                theme.styleSlider(slider);
+                int thickness = theme.px(Math.max(MIN_TOUCH_DP, 40 * s));
+                if (upright) {
+                    // A fixed length, so the slider is long enough to set a position with a finger.
+                    int length = theme.px(160 * s);
+                    sliderBox.setLayoutParams(new LinearLayout.LayoutParams(thickness, length));
+                    LinearLayout.LayoutParams columnParams = (LinearLayout.LayoutParams) ((View) sliderBox.getParent()).getLayoutParams();
+                    if (config.edge == ActionConfig.Edge.LEFT) columnParams.leftMargin = theme.px(32 * s);
+                    else columnParams.rightMargin = theme.px(32 * s);
+                    ((View) sliderBox.getParent()).setLayoutParams(columnParams);
+                    sliderBox.removeOnLayoutChangeListener(SLIDER_FIT);
+                    sliderBox.addOnLayoutChangeListener(SLIDER_FIT);
+                } else {
+                    LinearLayout.LayoutParams sliderParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, thickness);
+                    sliderParams.topMargin = theme.px(10 * s);
+                    slider.setLayoutParams(sliderParams);
+                }
+                theme.styleText(closedLabel, 12 * s, 400, "onSurfaceVariant");
+                theme.styleText(openLabel, 12 * s, 400, "onSurfaceVariant");
+            }
+            applyChoices();
+        }
+
+        /**
+         * Sizes the turned slider to its box: its width becomes the box's height, centred, so the
+         * quarter turn lays it exactly over the box.
+         */
+        private static final View.OnLayoutChangeListener SLIDER_FIT = (box, l, t, r, b, ol, ot, or, ob) -> {
+            int w = r - l, h = b - t;
+            View bar = ((ViewGroup) box).getChildAt(0);
+            FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) bar.getLayoutParams();
+            if (p.width == h && p.height == w) return;
+            p.width = h;
+            p.height = w;
+            p.gravity = Gravity.CENTER;
+            box.post(() -> bar.setLayoutParams(p));
+        };
+
+        @Override protected void dispatchDraw(android.graphics.Canvas canvas) {
+            if (!gate.hiding()) super.dispatchDraw(canvas);
+        }
+
+        @Override protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            gate.attach();
+            gate.close();
+        }
+
+        @Override protected void onDetachedFromWindow() {
+            gate.detach();
+            super.onDetachedFromWindow();
+        }
+
+        @Override protected void onLayout(boolean changed, int l, int t, int r, int b) {
+            super.onLayout(changed, l, t, r, b);
+            gate.check();
+        }
     }
 
     /** The hidden bar: a small tab against the edge with a lightning bolt and a chevron. */

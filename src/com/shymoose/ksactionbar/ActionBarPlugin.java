@@ -35,6 +35,13 @@ import me.jxl.kiosk.plugins.PluginHost;
  */
 public final class ActionBarPlugin implements KioskPlugin {
     static final String BAR = "bar";
+    static final String MENU = "menu";
+    /** An open menu closes after this long without a touch, so a wall panel is not left with a menu up. */
+    static final long MENU_TIMEOUT_MS = 30_000;
+    /** Space between the bar and an open menu, and between a menu and the other screen edges, in dp. */
+    private static final int MENU_GAP = 8;
+    private static final int MENU_MARGIN = 12;
+    private static final int MENU_TRANSITION_MS = 160;
     private static final int BAR_TRANSITION_MS = 180;
     /** How long a tap waits for Home Assistant to report a change before it stops looking pending. */
     static final long PENDING_MS = 10_000;
@@ -90,6 +97,14 @@ public final class ActionBarPlugin implements KioskPlugin {
     private String lastStatus;
     private boolean lastStatusError;
     private final Map<String, String> errors = new LinkedHashMap<>();
+    /** The item whose menu is open, or -1. */
+    private int openMenu = -1;
+    /** Bumped for every menu shown or closed, so a late teardown of an old menu is ignored. */
+    private int menuGeneration;
+    private ActionViews.MenuPanel menuView;
+    private final Runnable menuTimeout = () -> {
+        try { closeMenu(); } catch (RuntimeException error) { log(host, "Could not close the menu", error); }
+    };
 
     @Override
     public synchronized void start(PluginHost host, Map<String, Object> settings) {
@@ -125,6 +140,7 @@ public final class ActionBarPlugin implements KioskPlugin {
         if (host == null) return;
         follow(parsed.entities());
         if (!parsed.sameShape(previous)) rebuild.set(true);
+        main.post(this::closeMenu);
         sync();
         pushTiles();
         if (parsed.autoCollapse != previous.autoCollapse) main.post(this::scheduleAutoCollapse);
@@ -160,8 +176,12 @@ public final class ActionBarPlugin implements KioskPlugin {
             }
             pushTiles();
             report();
+            main.post(() -> refreshMenu(entity));
             main.removeCallbacks(fill);
             main.postDelayed(fill, FILL_DELAY_MS);
+        } else if ("overlay.closed".equals(event) && payload != null && MENU.equals(payload.get("key"))) {
+            // A tap outside the menu closed it. Its overlay is gone; only the bookkeeping is left.
+            main.post(this::menuClosed);
         }
     }
 
@@ -215,6 +235,7 @@ public final class ActionBarPlugin implements KioskPlugin {
                     String next = text(((Map<?, ?>) data).get("currentPath"));
                     if (!Objects.equals(next, path)) {
                         path = next;
+                        main.post(this::closeMenu);
                         sync();
                         report();
                     }
@@ -256,40 +277,103 @@ public final class ActionBarPlugin implements KioskPlugin {
         });
     }
 
-    /** Main thread. A tap: acts unless the item needs a long press, in which case it says so. */
+    /** Main thread. A tap: covers and locks open their menu, everything else acts at once. */
     private void tap(int index) {
         ActionConfig cfg = config;
         if (index < 0 || index >= cfg.items.size()) return;
         ActionItem item = cfg.items.get(index);
         EntityState state = states.getOrDefault(item.entity, EntityState.UNKNOWN);
         if (!state.usable()) return;
-        if (cfg.holdToConfirm && Actions.needsHold(item.entity, state)) {
-            ActionViews.Root view = root.get();
-            if (view != null) view.hint(index, Actions.holdHint(item.entity, state));
+        if (Actions.hasMenu(item.entity)) {
+            if (openMenu == index) closeMenu();
+            else openMenu(index);
             return;
         }
-        act(item, state);
+        act(item, state, Actions.call(item.entity, state));
     }
 
-    /** Main thread. A long press acts on any item, including the ones a tap alone does not move. */
+    /** Main thread. A long press acts at once on any item, including covers and locks. */
     private boolean hold(int index) {
         ActionConfig cfg = config;
         if (index < 0 || index >= cfg.items.size()) return false;
         ActionItem item = cfg.items.get(index);
         EntityState state = states.getOrDefault(item.entity, EntityState.UNKNOWN);
         if (!state.usable()) return false;
-        return act(item, state);
+        closeMenu();
+        return act(item, state, Actions.call(item.entity, state));
+    }
+
+    /**
+     * Main thread. Opens a cover's or lock's menu in its own overlay, over its item. Building it does
+     * not resize the bar, and KS closes it on a tap anywhere else.
+     */
+    private void openMenu(int index) {
+        PluginHost current = host;
+        if (current == null) return;
+        ActionConfig cfg = config;
+        ActionViews.Root view = root.get();
+        int offset = view == null ? 0 : view.itemOffsetDp(index);
+        int barDepth = view == null ? depth : view.depthDp();
+        int clear = Math.min(4096, barDepth + MENU_GAP);
+        int left = MENU_MARGIN, top = MENU_MARGIN, right = MENU_MARGIN, bottom = MENU_MARGIN;
+        switch (cfg.edge) {
+            case TOP: top = clear; break;
+            case LEFT: left = clear; break;
+            case BOTTOM: bottom = clear; break;
+            default: right = clear; break;
+        }
+        OverlaySpec spec = OverlaySpec.at(anchor(cfg))
+            .inset(left, top, right, bottom)
+            .offset(cfg.vertical ? 0 : offset, cfg.vertical ? offset : 0)
+            .closeOnOutsideTouch(true)
+            .enter(OverlaySpec.SCALE).exit(OverlaySpec.FADE).transitionDuration(MENU_TRANSITION_MS);
+        // Replacing the overlay at the same key swaps one open menu for another.
+        current.showOverlay(MENU, spec, new MenuFactory(cfg, index, ++menuGeneration));
+        openMenu = index;
+        if (view != null) view.setOpenMenu(index);
+        main.removeCallbacks(autoCollapse);
+        main.removeCallbacks(menuTimeout);
+        main.postDelayed(menuTimeout, MENU_TIMEOUT_MS);
+    }
+
+    /** Main thread. Closes the open menu, if any, and lets the bar's auto-hide run again. */
+    private void closeMenu() {
+        PluginHost current = host;
+        boolean open = openMenu >= 0 || menuView != null;
+        menuClosed();
+        if (!open || current == null) return;
+        try { current.hideOverlay(MENU); } catch (RuntimeException error) { log(current, "Could not close the menu", error); }
+    }
+
+    /** Main thread. The menu is gone, by a tap outside it, a timeout or a replacement. */
+    private void menuClosed() {
+        boolean wasOpen = openMenu >= 0 || menuView != null;
+        openMenu = -1;
+        menuView = null;
+        menuGeneration++;
+        main.removeCallbacks(menuTimeout);
+        ActionViews.Root view = root.get();
+        if (view != null) view.setOpenMenu(-1);
+        if (wasOpen) scheduleAutoCollapse();
+    }
+
+    /** Main thread. Shows the latest state in the open menu, if it belongs to {@code entity}. */
+    private void refreshMenu(String entity) {
+        ActionConfig cfg = config;
+        if (menuView == null || openMenu < 0 || openMenu >= cfg.items.size()) return;
+        ActionItem item = cfg.items.get(openMenu);
+        if (!item.entity.equals(entity)) return;
+        EntityState state = states.getOrDefault(item.entity, EntityState.UNKNOWN);
+        menuView.update(Actions.describe(item.entity, state), Actions.choices(item.entity, state), state.position);
     }
 
     /**
      * Main thread. Calls the service once. A tap never retries: a call that timed out may still
      * have reached Home Assistant, and a toggle sent twice cancels itself.
      */
-    private boolean act(ActionItem item, EntityState state) {
+    private boolean act(ActionItem item, EntityState state, Actions.Call call) {
         PluginHost current = host;
-        if (current == null) return false;
-        Actions.Call call = Actions.call(item.entity, state);
-        if (call == null) return false;
+        if (current == null || call == null) return false;
         String label = item.displayLabel(state);
         String key = "call:" + item.entity;
         int token = tapTokens.incrementAndGet();
@@ -356,6 +440,7 @@ public final class ActionBarPlugin implements KioskPlugin {
         boolean visible = !userHidden && cfg.visibleAt(path);
         try {
             if (!visible) {
+                closeMenu();
                 main.removeCallbacks(autoCollapse);
                 if (shown) {
                     current.hideOverlay(BAR);
@@ -367,6 +452,7 @@ public final class ActionBarPlugin implements KioskPlugin {
             // Read the flag first, so a first show also clears a pending rebuild.
             boolean replace = rebuild.getAndSet(false);
             if (!shown || replace) {
+                closeMenu();
                 current.showOverlay(BAR, OverlaySpec.at(anchor(cfg)).closeOnBack(false)
                     .enter(OverlaySpec.FADE).exit(OverlaySpec.FADE).transitionDuration(BAR_TRANSITION_MS), new RootFactory());
                 errors.remove("overlay");
@@ -387,13 +473,14 @@ public final class ActionBarPlugin implements KioskPlugin {
     private void scheduleAutoCollapse() {
         main.removeCallbacks(autoCollapse);
         ActionConfig cfg = config;
-        if (shown && host != null && !userHidden && cfg.visibleAt(path)
+        if (shown && host != null && !userHidden && cfg.visibleAt(path) && openMenu < 0
                 && !collapsed && cfg.collapse != ActionConfig.Collapse.OFF && cfg.autoCollapse > 0) {
             main.postDelayed(autoCollapse, cfg.autoCollapse * 1000L);
         }
     }
 
     private void setCollapsed(boolean value) {
+        closeMenu();
         collapsed = value && config.collapse != ActionConfig.Collapse.OFF;
         ActionViews.Root view = root.get();
         if (view != null) view.setCollapsed(collapsed);
@@ -402,7 +489,7 @@ public final class ActionBarPlugin implements KioskPlugin {
 
     private void autoCollapse() {
         try {
-            if (shown && !collapsed && host != null) setCollapsed(true);
+            if (shown && !collapsed && host != null && openMenu < 0) setCollapsed(true);
         } catch (RuntimeException error) {
             log(host, "Could not hide the bar", error);
         }
@@ -412,6 +499,10 @@ public final class ActionBarPlugin implements KioskPlugin {
     private void forgetOverlay() {
         main.removeCallbacks(autoCollapse);
         main.removeCallbacks(fill);
+        main.removeCallbacks(menuTimeout);
+        openMenu = -1;
+        menuView = null;
+        menuGeneration++;
         shown = false;
         depth = 0;
         reserved = 0;
@@ -551,6 +642,78 @@ public final class ActionBarPlugin implements KioskPlugin {
                 if (shown) reserve(depthDp);
             } catch (RuntimeException error) { log(host, "Could not make room for the bar", error); }
         }
+    }
+
+    /** Built and destroyed on the main thread, which also owns the menu state. */
+    private final class MenuFactory implements OverlayFactory {
+        private final ActionConfig cfg;
+        private final int index;
+        private final int generation;
+
+        MenuFactory(ActionConfig cfg, int index, int generation) {
+            this.cfg = cfg;
+            this.index = index;
+            this.generation = generation;
+        }
+
+        @Override public View create(Context context, KsTheme theme) {
+            ActionItem item = cfg.items.get(index);
+            EntityState state = states.getOrDefault(item.entity, EntityState.UNKNOWN);
+            ActionViews.MenuPanel view = new ActionViews.MenuPanel(context, theme, cfg, item.displayLabel(state),
+                Actions.describe(item.entity, state), Actions.choices(item.entity, state), state.position,
+                Actions.hasPosition(item.entity, state), new ActionViews.MenuListener() {
+                    @Override public void onChoice(int choice) {
+                        try { menuChoice(index, choice); } catch (RuntimeException error) { log(host, "Menu choice failed", error); }
+                    }
+
+                    @Override public void onPosition(int percent) {
+                        try { menuPosition(index, percent); } catch (RuntimeException error) { log(host, "Could not move the cover", error); }
+                    }
+
+                    @Override public void onMenuTouch() {
+                        try { restartMenuTimeout(); } catch (RuntimeException ignored) {}
+                    }
+                });
+            if (generation == menuGeneration) menuView = view;
+            return view;
+        }
+
+        @Override public void onThemeChanged(View view, KsTheme theme) {
+            ((ActionViews.MenuPanel) view).restyle(theme);
+        }
+
+        @Override public void onDestroy(View view) {
+            // Back, a replacement or hideOverlay removed this menu. A newer menu keeps its state.
+            if (generation == menuGeneration) menuClosed();
+        }
+    }
+
+    /** Main thread. A button in the menu of item {@code index} was tapped. It acts once and the menu closes. */
+    void menuChoice(int index, int choice) {
+        ActionConfig cfg = config;
+        if (index < 0 || index >= cfg.items.size()) return;
+        ActionItem item = cfg.items.get(index);
+        EntityState now = states.getOrDefault(item.entity, EntityState.UNKNOWN);
+        List<Actions.Choice> choices = Actions.choices(item.entity, now);
+        closeMenu();
+        if (choice >= 0 && choice < choices.size() && now.usable()) act(item, now, choices.get(choice).call);
+    }
+
+    /** Main thread. The slider in the menu of item {@code index} was released. The menu stays open. */
+    void menuPosition(int index, int percent) {
+        ActionConfig cfg = config;
+        if (index < 0 || index >= cfg.items.size()) return;
+        ActionItem item = cfg.items.get(index);
+        EntityState now = states.getOrDefault(item.entity, EntityState.UNKNOWN);
+        restartMenuTimeout();
+        if (now.usable() && Actions.hasPosition(item.entity, now)) act(item, now, Actions.position(percent));
+    }
+
+    /** Main thread. A touch in the open menu gives it another full timeout. */
+    private void restartMenuTimeout() {
+        if (openMenu < 0) return;
+        main.removeCallbacks(menuTimeout);
+        main.postDelayed(menuTimeout, MENU_TIMEOUT_MS);
     }
 
     private final class RootFactory implements OverlayFactory {

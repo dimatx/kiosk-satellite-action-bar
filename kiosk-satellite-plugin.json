@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "ks-action-bar",
   "name": "Action Bar",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "apiVersion": 1,
   "minAndroidSdk": 26,
   "entryClass": "com.shymoose.ksactionbar.ActionBarPlugin",
@@ -111,14 +111,6 @@
           "description": "The icon while the entity is on or open. Uses Icon when empty."
         }
       ]
-    },
-    {
-      "key": "holdToConfirm",
-      "type": "boolean",
-      "title": "Hold for locks and garage doors",
-      "default": true,
-      "group": "Behavior",
-      "description": "Locks, garage doors and gates act on a long press, so a stray tap does nothing."
     },
     {
       "key": "collapse",

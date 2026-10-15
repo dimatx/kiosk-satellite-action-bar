@@ -26,11 +26,18 @@ final class Actions {
         final String service;
         /** A short verb for messages, such as "unlock". */
         final String verb;
+        /** Service data, such as {@code {position: 40}}. Empty for none. */
+        final Map<String, Object> data;
 
         Call(String domain, String service, String verb) {
+            this(domain, service, verb, Collections.<String, Object>emptyMap());
+        }
+
+        Call(String domain, String service, String verb, Map<String, Object> data) {
             this.domain = domain;
             this.service = service;
             this.verb = verb;
+            this.data = data;
         }
 
         /** The haCall message for {@code entityId}. */
@@ -40,6 +47,7 @@ final class Actions {
             message.put("domain", domain);
             message.put("service", service);
             message.put("target", Collections.singletonMap("entity_id", entityId));
+            if (!data.isEmpty()) message.put("service_data", new LinkedHashMap<>(data));
             return message;
         }
 
@@ -87,8 +95,8 @@ final class Actions {
         return "scene".equals(domain) || "button".equals(domain) || "input_button".equals(domain) || "script".equals(domain);
     }
 
-    /** Whether a tap alone must not act: locks, and covers on doors, gates and garages. */
-    static boolean needsHold(String entityId, EntityState state) {
+    /** Locks, and covers on doors, gates and garages: things people walk through. */
+    static boolean guarded(String entityId, EntityState state) {
         String domain = domain(entityId);
         return "lock".equals(domain) || ("cover".equals(domain) && GUARDED_COVERS.contains(state.deviceClass));
     }
@@ -110,13 +118,87 @@ final class Actions {
 
     /** Whether an active state needs attention: an unlocked lock, or an open door, gate or garage. */
     static boolean attention(String entityId, EntityState state) {
-        return needsHold(entityId, state) && active(entityId, state);
+        return guarded(entityId, state) && active(entityId, state);
     }
 
-    /** The hint shown when a tap is not enough, such as "Hold to unlock". */
-    static String holdHint(String entityId, EntityState state) {
-        Call call = call(entityId, state);
-        return call == null ? "Hold" : "Hold to " + call.verb;
+    /** Home Assistant's cover feature flags. */
+    static final int COVER_SUPPORTS_OPEN = 1;
+    static final int COVER_SUPPORTS_CLOSE = 2;
+    static final int COVER_SUPPORTS_POSITION = 4;
+
+    /** Whether a tap opens a menu of controls instead of acting at once: covers and locks. */
+    static boolean hasMenu(String entityId) {
+        String domain = domain(entityId);
+        return "cover".equals(domain) || "lock".equals(domain);
+    }
+
+    /** One button in an item's menu. */
+    static final class Choice {
+        final String label;
+        final String icon;
+        final Call call;
+        /** The entity is already in the state this choice asks for. */
+        final boolean current;
+
+        Choice(String label, String icon, Call call, boolean current) {
+            this.label = label;
+            this.icon = icon;
+            this.call = call;
+            this.current = current;
+        }
+    }
+
+    /** The buttons a cover's or lock's menu shows, in order. Empty for anything else. */
+    static java.util.List<Choice> choices(String entityId, EntityState state) {
+        java.util.List<Choice> choices = new java.util.ArrayList<>();
+        String value = state.state == null ? "" : state.state;
+        int features = state.supportedFeatures;
+        String dc = state.deviceClass;
+        switch (domain(entityId)) {
+            case "cover":
+                // A cover that reports no features at all is offered every basic control.
+                boolean any = features == 0;
+                if (any || (features & COVER_SUPPORTS_OPEN) != 0) {
+                    choices.add(new Choice("Open", defaultIcon(entityId, dc, true), new Call("cover", "open_cover", "open"),
+                        "open".equals(value) || "opening".equals(value)));
+                }
+                if ((features & COVER_SUPPORTS_STOP) != 0) {
+                    choices.add(new Choice("Stop", "mdi:stop", new Call("cover", "stop_cover", "stop"), false));
+                }
+                if (any || (features & COVER_SUPPORTS_CLOSE) != 0) {
+                    choices.add(new Choice("Close", defaultIcon(entityId, dc, false), new Call("cover", "close_cover", "close"),
+                        "closed".equals(value) || "closing".equals(value)));
+                }
+                break;
+            case "lock":
+                choices.add(new Choice("Lock", "mdi:lock", new Call("lock", "lock", "lock"), "locked".equals(value) || "locking".equals(value)));
+                choices.add(new Choice("Unlock", "mdi:lock-open-variant", new Call("lock", "unlock", "unlock"),
+                    "unlocked".equals(value) || "unlocking".equals(value)));
+                break;
+            default:
+                break;
+        }
+        return choices;
+    }
+
+    /** Whether a cover's menu has a position slider. */
+    static boolean hasPosition(String entityId, EntityState state) {
+        return "cover".equals(domain(entityId)) && (state.supportedFeatures & COVER_SUPPORTS_POSITION) != 0;
+    }
+
+    /** Moves a cover to {@code percent}, where 0 is closed and 100 is open. */
+    static Call position(int percent) {
+        int value = Math.max(0, Math.min(100, percent));
+        return new Call("cover", "set_cover_position", "move", Collections.<String, Object>singletonMap("position", value));
+    }
+
+    /** A short description of the entity's state for a menu's title, such as "Open · 40%". */
+    static String describe(String entityId, EntityState state) {
+        if (!state.usable()) return "Unavailable";
+        String value = state.state.replace('_', ' ');
+        String text = Character.toUpperCase(value.charAt(0)) + value.substring(1);
+        if ("cover".equals(domain(entityId)) && state.position != null) text += " \u00b7 " + state.position + "%";
+        return text;
     }
 
     /** The default icon for an entity, in its active or inactive look. */

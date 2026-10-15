@@ -21,7 +21,7 @@ public final class ControllerTest {
     public static void main(String[] args) throws Exception {
         followsEntities();
         tapsCallServices();
-        holdGuardsLocks();
+        menusForCoversAndLocks();
         failuresAndTimeouts();
         momentaryAndUnavailable();
         fillsLabels();
@@ -67,31 +67,75 @@ public final class ControllerTest {
 
         f.plugin.onEvent("ks.ha.entity.cover.shade", stateWith("opening", "t1", "shade", 15));
         f.clock.flush();
-        f.plugin.taps.onTap(1);
-        check("stop_cover".equals(f.host.calls.get(1).get("service")), "moving shade stops");
+        f.plugin.taps.onHold(1);
+        check("stop_cover".equals(f.host.calls.get(1).get("service")), "a long press stops a moving shade");
     }
 
-    private static void holdGuardsLocks() {
-        Fixture f = new Fixture(items("lock.front", "cover.garage"));
+    private static void menusForCoversAndLocks() throws Exception {
+        Fixture f = new Fixture(items("lock.front", "cover.shade", "light.desk"));
         f.plugin.onEvent("ks.ha.entity.lock.front", state("locked", "t1", "Front door"));
-        f.plugin.onEvent("ks.ha.entity.cover.garage", stateWith("closed", "t1", "garage", 0));
+        f.plugin.onEvent("ks.ha.entity.cover.shade", positioned("closed", "t1", "shade", 15, 0));
+        f.plugin.onEvent("ks.ha.entity.light.desk", state("off", "t1", "Desk"));
         f.clock.flush();
+        // A tap on a lock opens its menu and calls nothing.
         f.plugin.taps.onTap(0);
+        f.clock.flush();
+        check(f.host.menuShows == 1 && f.host.menuOpen, "a tap on a lock opens its menu");
+        check(f.host.calls.isEmpty(), "opening a menu calls nothing");
+        // Choosing Unlock calls it once and closes the menu.
+        f.plugin.menuChoice(0, 1);
+        f.clock.flush();
+        check(f.host.calls.size() == 1 && "unlock".equals(f.host.calls.get(0).get("service")), "Unlock unlocks");
+        check(!f.host.menuOpen, "a choice closes the menu");
+        // A second tap on the same item closes its menu again.
+        f.plugin.taps.onTap(1);
         f.plugin.taps.onTap(1);
         f.clock.flush();
-        check(f.host.calls.isEmpty(), "a tap never unlocks or opens the garage");
-        check(f.plugin.taps.onHold(0), "a long press acts");
-        check("unlock".equals(f.host.calls.get(0).get("service")), "long press unlocks");
-        check(f.plugin.taps.onHold(1), "long press on garage acts");
-        check("open_cover".equals(f.host.calls.get(1).get("service")), "long press opens garage");
+        check(!f.host.menuOpen, "a second tap closes the menu");
+        // The slider sets the position and leaves the menu open.
+        f.plugin.taps.onTap(1);
+        f.plugin.menuPosition(1, 40);
+        f.clock.flush();
+        Map<String, Object> move = f.host.calls.get(f.host.calls.size() - 1);
+        check("set_cover_position".equals(move.get("service")), "the slider moves the cover");
+        check(Integer.valueOf(40).equals(((Map<?, ?>) move.get("service_data")).get("position")), "to the chosen position");
+        check(f.host.menuOpen, "the menu stays open after the slider");
+        // A tap on another item while a menu is open acts and leaves the menu alone.
+        f.plugin.taps.onTap(2);
+        check("toggle".equals(f.host.calls.get(f.host.calls.size() - 1).get("service")), "a light still toggles on a tap");
+        // A long press acts at once and closes any menu.
+        f.plugin.taps.onHold(0);
+        f.clock.flush();
+        check("unlock".equals(f.host.calls.get(f.host.calls.size() - 1).get("service")), "a long press on a lock acts at once");
+        check(!f.host.menuOpen, "a long press closes the menu");
+        // An open menu closes after 30 seconds without a touch, and a tap outside it is bookkept.
+        f.plugin.taps.onTap(1);
+        f.clock.advance(ActionBarPlugin.MENU_TIMEOUT_MS - 1);
+        check(f.host.menuOpen, "still open before the timeout");
+        f.clock.advance(1);
+        check(!f.host.menuOpen, "closed after the timeout");
+        f.plugin.taps.onTap(1);
+        f.host.menuOpen = false;
+        f.plugin.onEvent("overlay.closed", map("key", "menu"));
+        f.clock.flush();
+        f.plugin.taps.onTap(1);
+        check(f.host.menuOpen, "after an outside tap, the next tap opens the menu again");
 
-        Map<String, Object> off = settings(items("lock.front"));
-        off.put("holdToConfirm", false);
-        Fixture g = new Fixture(off);
-        g.plugin.onEvent("ks.ha.entity.lock.front", state("locked", "t1", "Front door"));
+        // Auto-hide waits while a menu is open, and starts over once it closes.
+        Map<String, Object> s2 = settings(items("cover.shade"));
+        s2.put("autoCollapse", 10.0);
+        Fixture g = new Fixture(s2);
+        g.plugin.onEvent("ks.ha.entity.cover.shade", positioned("closed", "t1", "shade", 15, 0));
         g.clock.flush();
         g.plugin.taps.onTap(0);
-        check(g.host.calls.size() == 1, "with the guard off a tap unlocks");
+        g.clock.advance(20_000);
+        check(!collapsed(g.plugin), "auto-hide waits for an open menu");
+        g.plugin.menuChoice(0, 0);
+        g.clock.flush();
+        g.clock.advance(9_999);
+        check(!collapsed(g.plugin), "a fresh countdown after the menu closes");
+        g.clock.advance(1);
+        check(collapsed(g.plugin), "then the bar hides");
     }
 
     private static void failuresAndTimeouts() {
@@ -233,6 +277,14 @@ public final class ControllerTest {
         return stateWith(value, updated, deviceClass, features, null);
     }
 
+    private static Map<String, Object> positioned(String value, String updated, String deviceClass, int features, int position) {
+        Map<String, Object> payload = stateWith(value, updated, deviceClass, features, null);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> attributes = (Map<String, Object>) payload.get("attributes");
+        attributes.put("current_position", position);
+        return payload;
+    }
+
     private static Map<String, Object> stateWith(String value, String updated, String deviceClass, int features, String name) {
         Map<String, Object> attributes = new HashMap<>();
         if (name != null) attributes.put("friendly_name", name);
@@ -297,6 +349,8 @@ public final class ControllerTest {
         Map<String, Object> saved;
         int barShows;
         int hides;
+        int menuShows;
+        boolean menuOpen;
         boolean noHa;
         String status = "";
         boolean error;
@@ -313,8 +367,12 @@ public final class ControllerTest {
             callReplies.add(callback);
         }
         void replyCall(boolean ok, String error) { callReplies.remove(0).onResult(ok, null, error); }
-        public void showOverlay(String key, OverlaySpec spec, OverlayFactory factory) { barShows++; }
-        public void hideOverlay(String key) { hides++; }
+        public void showOverlay(String key, OverlaySpec spec, OverlayFactory factory) {
+            if ("menu".equals(key)) { menuShows++; menuOpen = true; } else barShows++;
+        }
+        public void hideOverlay(String key) {
+            if ("menu".equals(key)) menuOpen = false; else hides++;
+        }
         public void setContentInsets(int l, int t, int r, int b) {}
         public void status(String message, boolean error) { this.status = message; this.error = error; }
         public void saveSettings(Map<String, Object> values) { saved = values; }

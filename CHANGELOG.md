@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- A tap on a shade, blind or other cover opens a menu with Open, Stop and Close, and a slider for its position when the cover reports one. A tap on a lock opens Lock and Unlock. The current state is highlighted and stays live while the menu is open.
+- Beside a rail the menu stands upright, its slider open at the top and its buttons nearest the bar. Above or below a bar it lies flat. Menu buttons look and size like the bar's own.
+- A choice acts and closes the menu. Letting go of the slider moves the cover and keeps the menu open. A tap anywhere else, a page change or 30 seconds without a touch closes it, and the bar does not hide while a menu is open.
+- A long press still acts at once, without a menu.
+- The *Hold for locks and garage doors* setting and the *Hold to unlock* hint are gone: the menu replaces them.
 ## 0.1.3
 
 - A tap that Kiosk Satellite delivers more than 150 ms late is noted in the KS log, as in the navbar, to help tell kiosk lag from Home Assistant lag.
