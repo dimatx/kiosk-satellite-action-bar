@@ -40,6 +40,8 @@ public final class ActionBarPlugin implements KioskPlugin {
     static final long PENDING_MS = 10_000;
     /** Labels and icons are saved back once the entities have reported, not after each one. */
     static final long FILL_DELAY_MS = 1500;
+    /** A tap that reaches the bar this late, in ms, is logged. */
+    private static final long SLOW_TAP_MS = 150;
 
     interface Scheduler {
         void post(Runnable task);
@@ -531,6 +533,16 @@ public final class ActionBarPlugin implements KioskPlugin {
 
         @Override public void onInteraction() {
             try { scheduleAutoCollapse(); } catch (RuntimeException error) { log(host, "Could not restart auto-hide", error); }
+        }
+
+        @Override public void onLatency(long downMs, long upMs) {
+            // Only slow deliveries are worth a log line; every tap would flood the KS log.
+            long late = Math.max(downMs, upMs);
+            if (late < SLOW_TAP_MS) return;
+            PluginHost current = host;
+            try {
+                if (current != null) current.log("Slow tap: Kiosk Satellite delivered it " + late + " ms late");
+            } catch (RuntimeException ignored) {}
         }
 
         @Override public void onDepth(int depthDp) {

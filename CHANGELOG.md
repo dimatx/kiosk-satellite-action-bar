@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- A tap that Kiosk Satellite delivers more than 150 ms late is noted in the KS log, as in the navbar, to help tell kiosk lag from Home Assistant lag.
+- The resize workaround is now the navbar's exact copy, with its measurements documented.
+
 ## 0.1.2
 
 - Buttons have more space between them, so each reads as its own button.

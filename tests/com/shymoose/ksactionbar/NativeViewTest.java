@@ -136,6 +136,7 @@ public final class NativeViewTest {
         public void onCollapse() {}
         public void onExpand() {}
         public void onInteraction() {}
+        public void onLatency(long down, long up) {}
         public void onDepth(int depth) {}
     }
 }

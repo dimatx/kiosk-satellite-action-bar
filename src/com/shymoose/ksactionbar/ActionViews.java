@@ -48,6 +48,11 @@ final class ActionViews {
         void onExpand();
         /** Any touch, to restart the auto-hide countdown. */
         void onInteraction();
+        /**
+         * How late a tap reached the view, in ms. Touches pass through Flutter before reaching a
+         * plugin view, so this is KS's share of any lag.
+         */
+        void onLatency(long downMs, long upMs);
         /** The view's depth from its edge changed, in dp, for example when the bar hides behind its tab. */
         void onDepth(int depthDp);
     }
@@ -132,11 +137,20 @@ final class ActionViews {
 
     /**
      * Hides an overlay's content while its size is changing, so a frame drawn at the wrong size is
-     * never shown. KS scales the old texture to a new size until the view redraws into it, which
-     * shows as a stretched copy. Measured on a ThinkSmart View; see the navbar's SDK gap 16.
+     * never shown. KS draws a plugin overlay into a texture that it resizes only after measuring the
+     * view. Whatever the texture held is scaled to the new size until the view redraws, which shows
+     * as a stretched copy of the previous state. The gate keeps the content transparent from the
+     * moment its size will change until the host surface has exactly the measured size, then
+     * reveals it. A timeout reveals it anyway, so a size that never arrives cannot hide the bar.
      */
     static final class SizeGate {
         private static final long TIMEOUT_MS = 900;
+        /**
+         * How long to stay hidden after the host reaches the right size. The host view is resized
+         * before the surface behind it, so a frame drawn at once lands in the old surface and shows
+         * stretched. Measured on a ThinkSmart View: drawing at the match left the stretched frame up
+         * indefinitely, while redraws 150 ms later always landed.
+         */
         private static final long SETTLE_MS = 150;
 
         private final ViewGroup owner;
@@ -145,21 +159,26 @@ final class ActionViews {
         private int lastHostHeight = -1;
         private final Runnable timeout = this::open;
         private final Runnable reveal = this::open;
-        private final Runnable redraw;
-        private final View.OnLayoutChangeListener hostListener;
+        private final Runnable redraw = () -> invalidateTree(owner());
+        private final View.OnLayoutChangeListener hostListener = (view, l, t, r, b, ol, ot, or, ob) -> {
+            if (r - l != or - ol || b - t != ob - ot) redrawSoon();
+            check();
+        };
 
-        SizeGate(ViewGroup owner) {
-            this.owner = owner;
-            this.redraw = () -> invalidateTree(owner);
-            this.hostListener = (view, l, t, r, b, ol, ot, or, ob) -> {
-                if (r - l != or - ol || b - t != ob - ot) redrawSoon();
-                check();
-            };
-        }
+        SizeGate(ViewGroup owner) { this.owner = owner; }
 
+        /**
+         * Whether the owner should draw nothing. Owners skip drawing rather than using alpha: on KS's
+         * texture-backed overlays an alpha change alone never reached the screen, while an ordinary
+         * redraw does.
+         */
         boolean hiding() { return waiting; }
 
-        private View host() { return owner.getParent() instanceof View ? (View) owner.getParent() : null; }
+        private ViewGroup owner() { return owner; }
+
+        private View host() {
+            return owner.getParent() instanceof View ? (View) owner.getParent() : null;
+        }
 
         void attach() {
             View host = host();
@@ -174,6 +193,7 @@ final class ActionViews {
             owner.removeCallbacks(redraw);
         }
 
+        /** Redraw after the surface has had time to follow a resize, twice for slow panels. */
         private void redrawSoon() {
             owner.removeCallbacks(redraw);
             owner.postDelayed(redraw, 300);
@@ -188,12 +208,18 @@ final class ActionViews {
             owner.postDelayed(timeout, TIMEOUT_MS);
         }
 
+        /**
+         * Draw only while the host surface has exactly the owner's measured size. KS can resize the
+         * host again after a match (it briefly dropped to 2 x 2 while settling), so this runs on every
+         * layout of the owner or the host, hiding and revealing as needed.
+         */
         void check() {
             View host = host();
             int width = owner.getMeasuredWidth();
             int height = owner.getMeasuredHeight();
             int hostWidth = host == null ? -1 : host.getWidth();
             int hostHeight = host == null ? -1 : host.getHeight();
+            // KS passes sizes through Flutter's logical pixels, so allow a pixel or two of rounding.
             boolean match = host != null && width > 1 && height > 1
                 && Math.abs(hostWidth - width) <= 2 && Math.abs(hostHeight - height) <= 2;
             boolean hostChanged = hostWidth != lastHostWidth || hostHeight != lastHostHeight;
@@ -207,6 +233,7 @@ final class ActionViews {
             } else if (waiting) {
                 owner.removeCallbacks(reveal);
             } else if (hostChanged) {
+                // Only a new host size hides again, so the timeout cannot start a hide and show loop.
                 close();
             }
         }
@@ -298,9 +325,19 @@ final class ActionViews {
             super.dispatchDraw(canvas);
         }
 
+        private long downDelay = -1;
+
+        /** Measures how late touches arrive. The event time is when the finger actually moved. */
         @Override public boolean dispatchTouchEvent(MotionEvent event) {
-            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            long now = android.os.SystemClock.uptimeMillis();
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                downDelay = now - event.getEventTime();
                 try { listener.onInteraction(); } catch (RuntimeException ignored) {}
+            } else if (action == MotionEvent.ACTION_UP && downDelay >= 0) {
+                long down = downDelay;
+                downDelay = -1;
+                try { listener.onLatency(down, now - event.getEventTime()); } catch (RuntimeException ignored) {}
             }
             return super.dispatchTouchEvent(event);
         }
