@@ -133,7 +133,7 @@ python3 tools/build.py
 
 `tools/test.py` runs the logic tests and drives the plugin with a virtual clock and a fake host that records every Home Assistant call. `python3 tools/test_views.py --serial <adb-device-serial>` measures the native views on an adb-connected development device without installing an app.
 
-The ZIP lands in `dist/`. Install it with **Plugin Manager > Developer Tools > Install from ZIP**. To release, publish a GitHub release tagged `vX.Y.Z`. CI tests, builds and attaches the files Kiosk Satellite verifies. See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
+The ZIP lands in `dist/`. Install it with **Plugin Manager > Developer Tools > Install from ZIP**. To release, publish a GitHub release tagged `vX.Y.Z`. CI tests, builds and attaches the files Kiosk Satellite verifies. See [CHANGELOG.md](CHANGELOG.md) for what changed in each version. [docs/releasing.md](docs/releasing.md) covers versions, releases and keeping settings across updates.
 
 </details>
 
