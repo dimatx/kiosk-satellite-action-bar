@@ -71,7 +71,7 @@ Checked against **Kiosk Satellite 2026.10.25**, and still open in 2026.10.29: no
 
 ## 6. A fleet-synced plugin cannot be sized per kiosk
 
-*Product.*
+*Product.* Filed as [jxlarrea/kiosk-satellite#1037](https://github.com/jxlarrea/kiosk-satellite/issues/1037).
 
 **Need:** Run the same plugin with the same settings on every kiosk through Fleet Management, while each kiosk shows it at a size that suits its panel.
 
