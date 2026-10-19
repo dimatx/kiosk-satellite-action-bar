@@ -57,6 +57,42 @@ Checked against **Kiosk Satellite 2026.10.31**. Gap numbers never change, so res
 
 **Suggestion:** List hidden entities too, perhaps after the others or behind a "Show hidden" toggle, as Home Assistant does.
 
+## 7. Fleet sync holds a plugin update without saying so
+
+*Product.*
+
+**Need:** Update a plugin on the leader and see every follower get it, or learn why one did not.
+
+**Today:** A follower whose Kiosk Satellite version differs from the leader's takes no plugin updates at all until it is on the same version. The fleet page says only *Needs 2026.10.31* on the follower's row, and the follower's Plugin Manager says nothing. Measured on 2026.10.31 with 11 of 12 followers on 2026.10.29: after a navbar release only the follower on the leader's version moved up, and the rest stayed one or two releases behind with the plugin still marked as synced.
+
+**Workaround:** Update every follower's Kiosk Satellite first, then the plugins.
+
+**Suggestion:** Let plugin packages sync across app versions when the plugin's own manifest allows the follower's version, or at least say on the follower's plugin page and on the leader's Plugins row that the plugin is waiting for an app update.
+
+## 8. A fleet install cannot replace a repository install of the same plugin
+
+*Product.*
+
+**Need:** Move kiosks that already run a plugin from GitHub under fleet management.
+
+**Today:** A follower that installed the plugin from its GitHub repository refuses the leader's package: the leader's row shows *Could not install Navbar: This plugin ID belongs to another repository. Uninstall it before changing sources.* The packages are the same release from the same repository, checked by SHA-256. Seen on a Fire Max 11 on 2026.10.31.
+
+**Workaround:** Remove the plugin on that follower, which deletes its settings, and sync again.
+
+**Suggestion:** When the leader's package comes from the same repository as the follower's install, take the install over and keep its settings, the way an update does.
+
+## 9. The Community Plugins check fails on Windows
+
+*Tooling.*
+
+**Need:** Run the submission check locally before submitting, as the template's README asks.
+
+**Today:** On Windows, `python tools/community_plugins.py check <url>` runs every check and then crashes printing the report: `UnicodeEncodeError: 'charmap' codec can't encode character '\u2705'`. The console uses cp1252 and the report starts each line with an emoji.
+
+**Workaround:** Set `PYTHONIOENCODING=utf-8` first.
+
+**Suggestion:** Reconfigure stdout to UTF-8 in the script (`sys.stdout.reconfigure(encoding='utf-8')`), as the other template tools already do for Windows.
+
 ## Resolved
 
 | # | Gap | Resolved by | How the bar uses it |
