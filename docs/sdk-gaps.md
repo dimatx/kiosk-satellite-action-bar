@@ -2,7 +2,7 @@
 
 Places where the Kiosk Satellite plugin SDK made a feature of the action bar hard or impossible, for the KS maintainer. Overlay gaps this plugin shares with the navbar, such as slow overlay creation and the stretched frame after a resize, are tracked once in the [navbar's list](https://github.com/dimatx/kiosk-satellite-navbar/blob/main/docs/sdk-gaps.md) and not repeated here.
 
-Checked against **Kiosk Satellite 2026.10.25**.
+Checked against **Kiosk Satellite 2026.10.25**, and still open in 2026.10.29: no plugin icon or overlay code changed in 2026.10.26 to 2026.10.29.
 
 | # | Gap | Kind | What users notice |
 | --- | --- | --- | --- |
