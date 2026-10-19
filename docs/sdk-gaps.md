@@ -56,3 +56,15 @@ Checked against **Kiosk Satellite 2026.10.25**, and still open in 2026.10.29: no
 **Workaround:** None in the plugin. The kiosk runs with **Legacy renderer** on.
 
 **Suggestion:** Detect the bad combination and use Skia for platform views, or turn on **Legacy renderer** automatically when a plugin overlay is shown on Mesa with `minigbm`, the way it already does after startup crashes.
+
+## 5. The entity picker leaves out hidden entities
+
+*Product.*
+
+**Need:** Put a light group on the bar, such as one that switches every art light in the house.
+
+**Today:** The `entity` picker lists every entity except those Home Assistant marks hidden: `home_assistant_manager.dart` keeps a state only when its registry entry has no `hidden_by`. Users often hide group helpers so the members, not the group, show in Home Assistant's area views, and hidden entities are exactly the ones they still want to control from a wall panel. Home Assistant's own entity pickers still offer hidden entities; hiding only keeps them off generated dashboards. Found with a light group hidden by the user, which the picker never offered.
+
+**Workaround:** Unhide the entity in Home Assistant, or set the item over the remote API with `configurePlugin`.
+
+**Suggestion:** List hidden entities too, perhaps after the others or behind a "Show hidden" toggle, as Home Assistant does.
