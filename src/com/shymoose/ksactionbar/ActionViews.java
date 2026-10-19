@@ -706,7 +706,8 @@ final class ActionViews {
             card.setOrientation(LinearLayout.VERTICAL);
             title = new TextView(context);
             title.setText(name);
-            title.setSingleLine(true);
+            // Up to two lines, so a name such as "Porch door" is never cut short on a narrow card.
+            title.setMaxLines(2);
             title.setEllipsize(android.text.TextUtils.TruncateAt.END);
             title.setIncludeFontPadding(false);
             state = new TextView(context);
@@ -878,6 +879,10 @@ final class ActionViews {
             theme.styleText(title, 16 * s, 500, "onSurface");
             theme.styleText(state, 13 * s, 400, "onSurfaceVariant");
             title.setMaxWidth(theme.px(280 * s));
+            // The card is as wide as its name, up to the title's limit, so a short name such as
+            // "Porch door" is never cut or wrapped by a narrow button column.
+            int named = (int) Math.ceil(title.getPaint().measureText(String.valueOf(title.getText()))) + 2 * pad;
+            card.setMinimumWidth(Math.max(card.getMinimumWidth(), Math.min(named, theme.px(280 * s) + 2 * pad)));
             LinearLayout.LayoutParams stateParams = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
             stateParams.topMargin = theme.px(4 * s);
             stateParams.bottomMargin = theme.px(12 * s);

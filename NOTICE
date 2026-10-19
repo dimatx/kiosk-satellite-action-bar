@@ -4,7 +4,7 @@ Copyright 2026 Dima Tokar
 Licensed under the Apache License, Version 2.0. See LICENSE.
 
 Built from the Kiosk Satellite plugin template
-(https://github.com/jxlarrea/kiosk-satellite-plugin-hello-world), Apache-2.0.
+(https://github.com/jxlarrea/kiosk-satellite-plugins), Apache-2.0.
 The SDK sources under sdk/ and the build tools under tools/ come from that
 template.
 

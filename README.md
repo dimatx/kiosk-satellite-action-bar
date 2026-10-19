@@ -21,14 +21,27 @@ A companion to [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-sate
 - **Fits your layout.** A rail down the right or left, or a bar along the top or bottom. Names wrap to two lines, or hide them for icons only.
 - **Light.** Native Android views, no WebView, and only the buttons that change are redrawn.
 
-## Install
+## Installation
 
-You need Kiosk Satellite **2026.10.25** or newer, connected to Home Assistant.
+You need Kiosk Satellite **2026.10.25** or newer, connected to Home Assistant. On **2026.10.30** and newer the bar follows each kiosk's **Scale UI**.
 
-1. In Kiosk Satellite, open **Settings > Plugin Manager > Add plugin**.
-2. Paste `https://github.com/dimatx/kiosk-satellite-action-bar`, tap **Preview**, then **Trust and install**.
-3. Turn on **Action Bar**, open it and tap **Add item**.
-4. Pick an entity and tap **Save**. Its button appears on the right edge of the screen.
+### Community Plugins (Recommended)
+
+Action Bar is listed in [Community Plugins](https://kiosksatellite.com/plugins/). Use the button below to open it in your Kiosk Satellite and install it.
+
+[![Install in Kiosk Satellite](https://kiosksatellite.com/img/badges/plugin-add.svg)](https://kiosksatellite.com/redirect/plugin/?repository=dimatx/kiosk-satellite-action-bar)
+
+Or search for `Action Bar` in **Settings > Plugin Manager > Browse plugins** in Kiosk Satellite.
+
+### Manual
+
+1. Open **Settings > Plugin Manager** in Kiosk Satellite and turn on **Enable Plugins**.
+2. Choose **Add plugin**, paste `https://github.com/dimatx/kiosk-satellite-action-bar` and choose **Preview**.
+3. Review the plugin and choose **Trust and install**.
+
+### First steps
+
+Turn on **Action Bar**, open it and tap **Add item**. Pick an entity and tap **Save**. Its button appears on the right edge of the screen.
 
 Settings are on the plugin's page, on the kiosk or in Remote Admin, and take effect as soon as you save them.
 
@@ -74,7 +87,7 @@ A call is sent once and never retried, because a call that timed out may still h
 | --- | --- |
 | Position | Right, Left, Top or Bottom. Right and Left make a rail |
 | Labels | Always, or Never for icons only |
-| Size | 80% to 140% |
+| Size | 80% to 140%, on top of the kiosk's **Scale UI** |
 | Opacity | How much of the dashboard shows through |
 | Items | Up to 16 entities |
 | Swipe to hide | Start visible, Start hidden or Off |
@@ -120,9 +133,13 @@ The ZIP lands in `dist/`. Install it with **Plugin Manager > Developer Tools > I
 
 </details>
 
+## Privacy
+
+Action Bar talks only to your own Home Assistant, and only through Kiosk Satellite's connection. It reads the state of the entities you add and, when you tap, calls the matching service on that entity, such as `homeassistant.toggle` or `lock.unlock`. It never sees a Home Assistant token and sends nothing anywhere else.
+
 ## Credits
 
-Built for [Kiosk Satellite](https://github.com/jxlarrea/kiosk-satellite) by [@jxlarrea](https://github.com/jxlarrea), whose plugin SDK, overlays, pickers, icons and Home Assistant access make a bar like this possible. Started from the [Kiosk Satellite plugin template](https://github.com/jxlarrea/kiosk-satellite-plugin-hello-world), and shares its overlay work with [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar). Plugin SDK limits found along the way are tracked in [docs/sdk-gaps.md](docs/sdk-gaps.md).
+Built for [Kiosk Satellite](https://github.com/jxlarrea/kiosk-satellite) by [@jxlarrea](https://github.com/jxlarrea), whose plugin SDK, overlays, pickers, icons and Home Assistant access make a bar like this possible. Started from the [Kiosk Satellite plugin template](https://github.com/jxlarrea/kiosk-satellite-plugins), and shares its overlay work with [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar). Plugin SDK limits found along the way are tracked in [docs/sdk-gaps.md](docs/sdk-gaps.md).
 
 ## License
 
