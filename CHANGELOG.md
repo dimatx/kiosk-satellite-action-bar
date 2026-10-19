@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+
+- A simpler icon that reads at the small sizes Community Plugins and Browse plugins use.
+
 ## 0.3.2
 
 - README: up to date on where menus open, Fleet Management and Scale UI.
