@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- A menu longer than the bar is centered on the bar instead of on its item, so a tall menu beside a short rail hangs evenly around it. Shorter menus still open beside their item.
+
 ## 0.3.0
 
 - An icon for Community Plugins and **Browse plugins**.

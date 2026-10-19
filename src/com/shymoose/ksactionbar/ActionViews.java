@@ -347,6 +347,11 @@ final class ActionViews {
             restyle(theme);
         }
 
+        /** The theme the bar was last styled with, for building views that match it. */
+        KsTheme theme() { return theme; }
+
+        /** The bar's length along its edge, in pixels. */
+        int lengthPx() { return config.vertical ? gate.contentHeight() : gate.contentWidth(); }
         void setTiles(List<Tile> tiles) { bar.setTiles(tiles); }
 
         /** Marks the item whose menu is open, or none for -1. */
