@@ -32,3 +32,15 @@ Checked against **Kiosk Satellite 2026.10.25**, and still open in 2026.10.29: no
 **Workaround:** None that is worth shipping. The plugin could call `startScreensaver` again after a tap, but the dashboard would flash in between. The bar stays below the screensaver, as an ordinary overlay does.
 
 **Suggestion:** Treat touches that an `onTop` overlay's views consume as the plugin's own, so they neither dismiss the screensaver nor reset its idle timer. Or offer an `OverlaySpec` option for it, such as `keepScreensaver(true)`.
+
+## 3. A wrapped overlay is cut off when the UI scale is above 100%
+
+*Product.*
+
+**Need:** Show the whole bar on a kiosk with **UI scale** above 100%.
+
+**Today:** `PluginOverlayViews.OverlayFrame` measures a `WRAP` overlay in physical pixels at the display density, and `plugin_overlay.dart` divides that by `MediaQuery.devicePixelRatioOf(context)`, which already includes the UI scale. The window comes out smaller than the view by exactly the UI scale and cuts off its far side. Measured on a Fire Max 11 at 115%: the bar measured 139 x 523 and got a 121 x 455 window, and the navbar measured 600 x 117 and got 522 x 102, both 0.87. Dimensions given in dp, such as insets and offsets, land where expected, so only the measured size is affected. The plugin's views also ignore the UI scale and stay at 100%.
+
+**Workaround:** The resize gate learns the shrink from the first window KS gives, once, and the overlay reports a size that much larger, so the window fits the content. Learning only once matters: the window lags behind each new report and is then smaller on both sides too, and learning from that enlarged the bar without end and made it flash.
+
+**Suggestion:** Divide by the unscaled pixel ratio (`View.of(context).devicePixelRatio`) when converting a measured overlay, or measure overlays at the scaled density and give plugins the scaled density in `KsTheme`, so they follow the UI scale like the rest of the kiosk.

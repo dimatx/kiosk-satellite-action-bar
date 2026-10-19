@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- The bar and its menus are no longer cut off on a kiosk whose **UI scale** is above 100%. Kiosk Satellite sizes a plugin overlay for the scaled UI and made the window smaller than the bar, so its far end and bottom were cut off. The bar now detects this and sizes itself so the window fits (SDK gap 3).
+
 ## 0.2.1
 
 - A cover's menu marks Open only when the cover is all the way open or opening, and Close only when it's closed or closing. A shade part way open marks neither.
