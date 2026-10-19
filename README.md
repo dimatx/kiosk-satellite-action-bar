@@ -70,7 +70,7 @@ Drag items by their handle, or use the arrows in Remote Admin, to change their o
 | Media player | Plays or pauses it |
 | Anything else, such as a sensor | Nothing. The button still shows the entity's state |
 
-A menu opens beside its button, with the buttons nearest the bar. Beside a rail it stands upright, with the slider open at the top. Above or below a bar it lies flat. The current state is highlighted and stays live while the menu is open. A choice acts and closes the menu, letting go of the slider moves the cover and keeps the menu open, and a tap anywhere else closes it. A menu also closes after 30 seconds without a touch.
+A menu opens beside its button, with the buttons nearest the bar. A menu longer than the bar, such as a shade's beside a short rail, is centered on the bar instead. Beside a rail it stands upright, with the slider open at the top. Above or below a bar it lies flat. The current state is highlighted and stays live while the menu is open. A choice acts and closes the menu, letting go of the slider moves the cover and keeps the menu open, and a tap anywhere else closes it. A menu also closes after 30 seconds without a touch.
 
 A long press acts at once, without a menu: on a cover it opens, closes or stops it, and on a lock it locks or unlocks it. On any other button a long press does the same as a tap.
 
@@ -110,6 +110,10 @@ Swipe the bar toward its edge to hide it behind a small tab. Swipe the tab back,
 <summary><b>Questions</b></summary>
 
 **A button shows a generic icon instead of the one in Home Assistant.** Icons from community icon packs, such as `phu:`, aren't available to Kiosk Satellite plugins, so the bar uses an icon for the entity's kind. Pick another icon for the item to change it.
+
+**An entity is missing from the list.** The list leaves out entities hidden in Home Assistant. Unhide it under **Settings > Entities** to pick it.
+
+**Does it work with Fleet Management?** Yes, but a profile syncs all of a plugin's settings, so every kiosk on it gets the same items. To give each room its own buttons, leave Action Bar out of the profile's **Plugins** row and install it on each kiosk.
 
 **The plugin's page says an entity was not found.** Kiosk Satellite's Home Assistant user can't see it, or it was renamed. Pick the entity again.
 

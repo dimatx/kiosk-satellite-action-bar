@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+- README: up to date on where menus open, Fleet Management and Scale UI.
+
 ## 0.3.1
 
 - A menu longer than the bar is centered on the bar instead of on its item, so a tall menu beside a short rail hangs evenly around it. Shorter menus still open beside their item.
