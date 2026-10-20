@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+
+- An amber icon tile, so the icon stands out against the teal Community Plugins page.
+
 ## 0.3.3
 
 - A simpler icon that reads at the small sizes Community Plugins and Browse plugins use.
