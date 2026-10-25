@@ -55,7 +55,7 @@ Checked against **Kiosk Satellite 2026.10.31**. Gap numbers never change, so res
 
 **Workaround:** Unhide the entity in Home Assistant, or set the item over the remote API with `configurePlugin`.
 
-**Suggestion:** List hidden entities too, perhaps after the others or behind a "Show hidden" toggle, as Home Assistant does.
+**Suggestion:** List hidden entities too, perhaps after the others or behind a "Show hidden" toggle, as Home Assistant does. Filed upstream as issue 1157. A plugin could list entities itself with `render_template` and plugin choices, but that rebuilds a picker KS already has, so this plugin waits for the upstream fix.
 
 ## 7. Fleet sync holds a plugin update without saying so
 

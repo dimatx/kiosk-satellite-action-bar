@@ -659,6 +659,15 @@ final class ActionViews {
         private int px(float dp) { return theme.px(dp); }
     }
 
+    /** An open menu, whichever kind: a card of controls, or a list of choices. */
+    interface MenuView {
+        /** Shows a new state, and new choices when they changed, while the menu is open. */
+        void update(String stateText, List<Actions.Choice> next, Integer position);
+        /** Dims the menu while the entity is unavailable, and marks a state that needs attention. */
+        void setStatus(boolean usable, boolean alarming);
+        void restyle(KsTheme theme);
+    }
+
     /** What the plugin hears from an open menu. All calls arrive on the main thread. */
     interface MenuListener {
         /** A button was tapped. */
@@ -677,7 +686,7 @@ final class ActionViews {
      * slider stands upright, open at the top. Above or below a bar the buttons sit in a row and the
      * slider lies flat, so the card takes little of the screen's height.
      */
-    static final class MenuPanel extends FrameLayout {
+    static final class MenuPanel extends FrameLayout implements MenuView {
         private final ActionConfig config;
         private final LinearLayout card;
         private final TextView title;
@@ -822,7 +831,7 @@ final class ActionViews {
         }
 
         /** Shows a new state while the menu is open. The slider stays put while a finger is on it. */
-        void update(String stateText, List<Actions.Choice> next, Integer position) {
+        @Override public void update(String stateText, List<Actions.Choice> next, Integer position) {
             if (!tracking) state.setText(stateText);
             if (next.size() == choices.size()) {
                 choices = next;
@@ -835,7 +844,7 @@ final class ActionViews {
          * While the entity is unavailable the controls dim and ignore touches; a state that needs
          * attention, such as a jammed lock, shows in the error color.
          */
-        void setStatus(boolean usable, boolean alarming) {
+        @Override public void setStatus(boolean usable, boolean alarming) {
             if (usable == this.usable && alarming == this.alarming) return;
             this.usable = usable;
             this.alarming = alarming;
@@ -869,7 +878,7 @@ final class ActionViews {
             if (slider != null) slider.setEnabled(usable);
         }
 
-        void restyle(KsTheme next) {
+        @Override public void restyle(KsTheme next) {
             theme = next;
             float s = config.scale;
             card.setBackground(surface(theme, Math.max(config.opacity, 0.95f)));
@@ -985,6 +994,230 @@ final class ActionViews {
         }
     }
 
+
+    /**
+     * The choices of an input_select or a select, as a list on a card: the name and current choice
+     * above rows of text, the current one marked. A long list scrolls inside the card, so it never
+     * grows past about half a screen. Home Assistant's own order is kept.
+     */
+    static final class ListPanel extends FrameLayout implements MenuView {
+        /** Rows in view before the list scrolls. The half row at the end shows there is more. */
+        private static final float VISIBLE_ROWS = 6.5f;
+        private static final int ROW_DP = 48;
+
+        private final ActionConfig config;
+        private final LinearLayout card;
+        private final TextView title;
+        private final TextView state;
+        private final Capped scroller;
+        private final LinearLayout rows;
+        private final List<TextView> labels = new ArrayList<>();
+        private final List<ImageView> checks = new ArrayList<>();
+        private final List<LinearLayout> cells = new ArrayList<>();
+        private final SizeGate gate = new SizeGate(this);
+        private final MenuListener listener;
+        private List<Actions.Choice> choices;
+        private boolean usable = true;
+        private boolean alarming;
+        private KsTheme theme;
+
+        ListPanel(Context context, KsTheme theme, ActionConfig config, String name, String stateText,
+                  List<Actions.Choice> choices, MenuListener listener) {
+            super(context);
+            this.config = config;
+            this.theme = theme;
+            this.choices = choices;
+            this.listener = listener;
+            card = new LinearLayout(context);
+            card.setOrientation(LinearLayout.VERTICAL);
+            title = new TextView(context);
+            title.setText(name);
+            title.setMaxLines(2);
+            title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            title.setIncludeFontPadding(false);
+            state = new TextView(context);
+            state.setText(stateText);
+            state.setMaxLines(1);
+            state.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            state.setIncludeFontPadding(false);
+            card.addView(title);
+            card.addView(state);
+            rows = new LinearLayout(context);
+            rows.setOrientation(LinearLayout.VERTICAL);
+            scroller = new Capped(context);
+            scroller.setVerticalScrollBarEnabled(false);
+            scroller.setOverScrollMode(View.OVER_SCROLL_NEVER);
+            scroller.addView(rows, new ViewGroup.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+            card.addView(scroller, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+            addView(card, new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+            buildRows();
+            restyle(theme);
+        }
+
+        /** A scroll view that stops growing at a set height. */
+        private static final class Capped extends ScrollView {
+            int maxPx = Integer.MAX_VALUE;
+            Capped(Context context) { super(context); }
+            @Override protected void onMeasure(int widthSpec, int heightSpec) {
+                int capped = MeasureSpec.makeMeasureSpec(maxPx, MeasureSpec.AT_MOST);
+                int mode = MeasureSpec.getMode(heightSpec);
+                super.onMeasure(widthSpec, mode == MeasureSpec.UNSPECIFIED ? capped
+                    : MeasureSpec.makeMeasureSpec(Math.min(maxPx, MeasureSpec.getSize(heightSpec)), MeasureSpec.AT_MOST));
+            }
+        }
+
+        private void buildRows() {
+            rows.removeAllViews();
+            labels.clear();
+            checks.clear();
+            cells.clear();
+            Context context = getContext();
+            for (int i = 0; i < choices.size(); i++) {
+                final int index = i;
+                LinearLayout cell = new LinearLayout(context);
+                cell.setOrientation(LinearLayout.HORIZONTAL);
+                cell.setGravity(Gravity.CENTER_VERTICAL);
+                TextView label = new TextView(context);
+                label.setText(choices.get(i).label);
+                label.setMaxLines(2);
+                label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                ImageView check = new ImageView(context);
+                check.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                cell.addView(label, new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+                cell.addView(check, new LinearLayout.LayoutParams(0, 0));
+                cell.setContentDescription(choices.get(i).label);
+                cell.setOnClickListener(view -> {
+                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                    listener.onChoice(index);
+                });
+                rows.addView(cell);
+                cells.add(cell);
+                labels.add(label);
+                checks.add(check);
+            }
+        }
+
+        @Override public void update(String stateText, List<Actions.Choice> next, Integer position) {
+            state.setText(stateText);
+            boolean same = next.size() == choices.size();
+            for (int i = 0; same && i < next.size(); i++) same = next.get(i).label.equals(choices.get(i).label);
+            choices = next;
+            if (!same) {
+                buildRows();
+                restyle(theme);
+            } else {
+                applyChoices();
+            }
+        }
+
+        @Override public void setStatus(boolean usable, boolean alarming) {
+            if (usable == this.usable && alarming == this.alarming) return;
+            this.usable = usable;
+            this.alarming = alarming;
+            applyChoices();
+        }
+
+        @Override public boolean dispatchTouchEvent(MotionEvent event) {
+            // A drag along the list is a touch too, so the menu stays open while it is read.
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
+                try { listener.onMenuTouch(); } catch (RuntimeException ignored) {}
+            }
+            return super.dispatchTouchEvent(event);
+        }
+
+        private void applyChoices() {
+            int pill = color(theme, "secondaryContainer", "primaryContainer");
+            int onPill = color(theme, "onSecondaryContainer", "onSurface");
+            int text = theme.color("onSurface");
+            float strength = usable ? 1f : 0.38f;
+            for (int i = 0; i < cells.size(); i++) {
+                boolean marked = choices.get(i).current && usable;
+                LinearLayout cell = cells.get(i);
+                cell.setBackground(pressable(theme, markedBackground(marked, pill, theme.px(theme.radiusRow())), radii(theme.px(theme.radiusRow()))));
+                cell.setSelected(marked);
+                cell.setEnabled(usable);
+                labels.get(i).setTextColor(fade(marked ? onPill : text, strength));
+                ImageView check = checks.get(i);
+                check.setVisibility(choices.get(i).current ? View.VISIBLE : View.INVISIBLE);
+                setIcon(check, theme, "mdi:check", fade(onPill, strength));
+            }
+            state.setTextColor(alarming ? color(theme, "error", "onSurfaceVariant") : theme.color("onSurfaceVariant"));
+        }
+
+        /** The current choice sits on a rounded pill, like the bar's own selected item. */
+        private static Drawable markedBackground(boolean marked, int color, int radius) {
+            GradientDrawable shape = new GradientDrawable();
+            shape.setColor(marked ? color : Color.TRANSPARENT);
+            shape.setCornerRadius(radius);
+            return shape;
+        }
+
+        @Override public void restyle(KsTheme next) {
+            theme = next;
+            float s = config.scale;
+            card.setBackground(surface(theme, Math.max(config.opacity, 0.95f)));
+            // The rows run nearly edge to edge so the current choice's pill has room, and the name and
+            // state are inset by the rows' own padding, so every left edge of text lines up.
+            int edge = theme.px(8 * s);
+            int inset = theme.px(12 * s);
+            card.setPadding(edge, theme.px(14 * s), edge, edge);
+            card.setMinimumWidth(theme.px(240 * s));
+            theme.styleText(title, 16 * s, 500, "onSurface");
+            theme.styleText(state, 13 * s, 400, "onSurfaceVariant");
+            title.setMaxWidth(theme.px(280 * s));
+            state.setMaxWidth(theme.px(280 * s));
+            LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            titleParams.leftMargin = inset;
+            titleParams.rightMargin = inset;
+            title.setLayoutParams(titleParams);
+            LinearLayout.LayoutParams stateParams = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            stateParams.leftMargin = inset;
+            stateParams.rightMargin = inset;
+            stateParams.topMargin = theme.px(4 * s);
+            stateParams.bottomMargin = theme.px(10 * s);
+            state.setLayoutParams(stateParams);
+            int rowPx = theme.px(ROW_DP * s);
+            scroller.maxPx = Math.round(rowPx * VISIBLE_ROWS);
+            for (int i = 0; i < cells.size(); i++) {
+                LinearLayout cell = cells.get(i);
+                cell.setMinimumHeight(rowPx);
+                cell.setPadding(inset, theme.px(6 * s), inset, theme.px(6 * s));
+                theme.styleText(labels.get(i), 15 * s, 400, "onSurface");
+                labels.get(i).setMaxWidth(theme.px(280 * s));
+                LinearLayout.LayoutParams checkParams = new LinearLayout.LayoutParams(theme.px(24 * s), theme.px(24 * s));
+                checkParams.leftMargin = inset;
+                checks.get(i).setLayoutParams(checkParams);
+            }
+            applyChoices();
+        }
+
+        @Override protected void dispatchDraw(android.graphics.Canvas canvas) {
+            if (!gate.hiding()) super.dispatchDraw(canvas);
+        }
+
+        @Override protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            gate.attach();
+            gate.close();
+        }
+
+        @Override protected void onDetachedFromWindow() {
+            gate.detach();
+            super.onDetachedFromWindow();
+        }
+
+        @Override protected void onMeasure(int widthSpec, int heightSpec) {
+            super.onMeasure(widthSpec, heightSpec);
+            int[] size = gate.measured(getMeasuredWidth(), getMeasuredHeight());
+            setMeasuredDimension(size[0], size[1]);
+        }
+
+        @Override protected void onLayout(boolean changed, int l, int t, int r, int b) {
+            super.onLayout(changed, l, t, l + gate.contentWidth(), t + gate.contentHeight());
+            gate.check();
+        }
+    }
     /** The hidden bar: a small tab against the edge with a lightning bolt and a chevron. */
     static final class Tab extends LinearLayout {
         private final ActionConfig config;

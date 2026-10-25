@@ -15,7 +15,7 @@ A companion to [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-sate
 
 - **One tap, from anywhere.** Lights, switches, fans, shades, scripts, scenes, buttons and media players respond to a single tap, on every page.
 - **Live state.** A button lights up while its entity is on or open, dims while it's unavailable, and shows a tap as pending until Home Assistant confirms it.
-- **Menus for shades and locks.** A tap on a shade opens Open, Stop and Close with a slider for its position. A tap on a lock opens Lock and Unlock. Nothing moves until you choose, and an unlocked lock or open garage stands out in a warning color.
+- **Menus for shades, locks and selects.** A tap on a shade opens Open, Stop and Close with a slider for its position. A tap on a lock opens Lock and Unlock. A tap on an input select or select opens its options. Nothing moves until you choose, and an unlocked lock or open garage stands out in a warning color.
 - **No token to manage.** Kiosk Satellite calls Home Assistant through its own connection. The plugin never sees a token.
 - **Set up without typing.** Pick each entity from a list. Its name and icon fill themselves in, and you can change them.
 - **Fits your layout.** A rail down the right or left, or a bar along the top or bottom. Names wrap to two lines, or hide them for icons only.
@@ -64,6 +64,7 @@ Drag items by their handle, or use the arrows in Remote Admin, to change their o
 | Light, switch, fan, input boolean, automation, siren, humidifier | Turns it on or off |
 | Shade, blind, curtain, garage door, gate or other cover | Opens a menu with Open, Stop and Close, and a slider for its position when the cover reports one |
 | Lock | Opens a menu with Lock and Unlock |
+| Input select, select | Opens a menu of its options, with the current one marked. Picking one sets it |
 | Script | Starts it, without waiting for it to finish |
 | Scene | Activates it |
 | Button, input button | Presses it |
@@ -72,7 +73,11 @@ Drag items by their handle, or use the arrows in Remote Admin, to change their o
 
 A menu opens beside its button, with the buttons nearest the bar. A menu longer than the bar, such as a shade's beside a short rail, is centered on the bar instead. Beside a rail it stands upright, with the slider open at the top. Above or below a bar it lies flat. The current state is highlighted and stays live while the menu is open. A choice acts and closes the menu, letting go of the slider moves the cover and keeps the menu open, and a tap anywhere else closes it. A menu also closes after 30 seconds without a touch.
 
-A long press acts at once, without a menu: on a cover it opens, closes or stops it, and on a lock it locks or unlocks it. On any other button a long press does the same as a tap.
+A select's menu is a list. It shows the entity's options in Home Assistant's order and scrolls when there are more than six. Picking an option only sets the select. What should happen next, such as playing an audiobook or starting a sound, is for a Home Assistant automation or script that triggers on the select changing, so the bar never needs to know what the options mean.
+
+<p align="center"><img src="docs/images/menu-select.png" alt="The menu for an input select, with the current option marked" width="560"></p>
+
+A long press acts at once, without a menu: on a cover it opens, closes or stops it, and on a lock it locks or unlocks it. On a select a long press does nothing, since there is no single choice to make. On any other button a long press does the same as a tap.
 
 A call is sent once and never retried, because a call that timed out may still have reached Home Assistant. If a call fails, the plugin's page says why. A button whose entity is unavailable ignores taps.
 

@@ -101,7 +101,7 @@ public final class ActionBarPlugin implements KioskPlugin {
     private int openMenu = -1;
     /** Bumped for every menu shown or closed, so a late teardown of an old menu is ignored. */
     private int menuGeneration;
-    private ActionViews.MenuPanel menuView;
+    private ActionViews.MenuView menuView;
     private final Runnable menuTimeout = () -> {
         try { closeMenu(); } catch (RuntimeException error) { log(host, "Could not close the menu", error); }
     };
@@ -679,9 +679,7 @@ public final class ActionBarPlugin implements KioskPlugin {
         @Override public View create(Context context, KsTheme theme) {
             ActionItem item = cfg.items.get(index);
             EntityState state = states.getOrDefault(item.entity, EntityState.UNKNOWN);
-            ActionViews.MenuPanel view = new ActionViews.MenuPanel(context, theme, cfg, item.displayLabel(state),
-                Actions.describe(item.entity, state), Actions.choices(item.entity, state), state.position,
-                Actions.hasPosition(item.entity, state), new ActionViews.MenuListener() {
+            ActionViews.MenuListener listener = new ActionViews.MenuListener() {
                     @Override public void onChoice(int choice) {
                         try { menuChoice(index, choice); } catch (RuntimeException error) { log(host, "Menu choice failed", error); }
                     }
@@ -693,14 +691,19 @@ public final class ActionBarPlugin implements KioskPlugin {
                     @Override public void onMenuTouch() {
                         try { restartMenuTimeout(); } catch (RuntimeException ignored) {}
                     }
-                });
+                };
+            ActionViews.MenuView view = Actions.isList(item.entity)
+                ? new ActionViews.ListPanel(context, theme, cfg, item.displayLabel(state), Actions.describe(item.entity, state),
+                    Actions.choices(item.entity, state), listener)
+                : new ActionViews.MenuPanel(context, theme, cfg, item.displayLabel(state), Actions.describe(item.entity, state),
+                    Actions.choices(item.entity, state), state.position, Actions.hasPosition(item.entity, state), listener);
             view.setStatus(state.usable(), Actions.alarming(item.entity, state));
             if (generation == menuGeneration) menuView = view;
-            return view;
+            return (View) view;
         }
 
         @Override public void onThemeChanged(View view, KsTheme theme) {
-            ((ActionViews.MenuPanel) view).restyle(theme);
+            ((ActionViews.MenuView) view).restyle(theme);
         }
 
         @Override public void onDestroy(View view) {

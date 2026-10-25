@@ -104,6 +104,7 @@ public final class ActionTest {
         eq("lock.unlock", lock.get(1).call.toString());
         eq("Unlocked", Actions.describe("lock.front", state("unlocked", null, 0)));
         check(Actions.choices("light.kitchen", state("on", null, 0)).isEmpty());
+        selects();
         // Positions are clamped and sent as service data.
         Map<String, Object> move = Actions.position(140).message("cover.shade");
         eq("set_cover_position", move.get("service"));
@@ -243,6 +244,53 @@ public final class ActionTest {
     private static String call(String entity, String value, String deviceClass, int features) {
         Actions.Call call = Actions.call(entity, state(value, deviceClass, features));
         return String.valueOf(call);
+    }
+
+    private static void selects() {
+        // A select opens a list of its options. Picking one only sets the entity: what follows is Home Assistant's.
+        check(Actions.hasMenu("input_select.ambient_sound"));
+        check(Actions.hasMenu("select.mode"));
+        check(Actions.isList("input_select.ambient_sound") && !Actions.isList("cover.shade") && !Actions.isList("lock.front"));
+        EntityState sound = withOptions("Rain", Arrays.asList("Rain", "Ocean", "Forest", "Off"));
+        List<Actions.Choice> picks = Actions.choices("input_select.ambient_sound", sound);
+        eq(4, picks.size());
+        eq("Rain", picks.get(0).label);
+        check(picks.get(0).current && !picks.get(1).current);
+        eq("input_select.select_option", picks.get(1).call.toString());
+        Map<String, Object> message = picks.get(1).call.message("input_select.ambient_sound");
+        eq("call_service", message.get("type"));
+        eq("input_select", message.get("domain"));
+        eq("Ocean", ((Map<?, ?>) message.get("service_data")).get("option"));
+        eq("input_select.ambient_sound", ((Map<?, ?>) message.get("target")).get("entity_id"));
+        eq("select.select_option", Actions.choices("select.mode", withOptions("a", Arrays.asList("a", "b"))).get(0).call.toString());
+        // The state is one of the options, shown as written, not tidied like a lock's.
+        eq("Rain", Actions.describe("input_select.ambient_sound", sound));
+        eq("Living_room scene", Actions.describe("select.scene", withOptions("Living_room scene", Arrays.asList("Living_room scene"))));
+        eq("Unavailable", Actions.describe("select.mode", new EntityState("unavailable", "unavailable", null, null, null, 0, "t")));
+        eq("mdi:format-list-bulleted", Actions.defaultIcon("input_select.x", null, false));
+        // A tap never acts on its own, and a select with no options has nothing to list.
+        check(Actions.call("input_select.ambient_sound", sound) == null);
+        check(Actions.choices("input_select.empty", withOptions("a", Arrays.<String>asList())).isEmpty());
+        // Options are read from the attribute: text only, none empty, none too long, a bounded number.
+        Map<String, Object> attributes = new HashMap<>();
+        List<Object> raw = new ArrayList<>(Arrays.<Object>asList("One", "", 7, null, "Two"));
+        raw.add(new String(new char[400]).replace('\0', 'x'));
+        attributes.put("options", raw);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("status", "available");
+        payload.put("state", "One");
+        payload.put("attributes", attributes);
+        EntityState parsed = EntityState.parse(payload);
+        eq(Arrays.asList("One", "Two", parsed.options.get(2)), parsed.options);
+        eq(EntityState.MAX_OPTION_LENGTH, parsed.options.get(2).length());
+        List<Object> many = new ArrayList<>();
+        for (int i = 0; i < 500; i++) many.add("o" + i);
+        eq(EntityState.MAX_OPTIONS, EntityState.options(many).size());
+        check(EntityState.options("not a list").isEmpty() && EntityState.options(null).isEmpty());
+    }
+
+    private static EntityState withOptions(String value, List<String> options) {
+        return new EntityState("available", value, null, null, null, 0, "t", null, options);
     }
 
     private static EntityState positioned(String value, String deviceClass, int features, Integer position) {

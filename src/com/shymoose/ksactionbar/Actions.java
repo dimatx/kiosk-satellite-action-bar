@@ -129,7 +129,17 @@ final class Actions {
     /** Whether a tap opens a menu of controls instead of acting at once: covers and locks. */
     static boolean hasMenu(String entityId) {
         String domain = domain(entityId);
-        return "cover".equals(domain) || "lock".equals(domain);
+        return "cover".equals(domain) || "lock".equals(domain) || isSelect(domain);
+    }
+
+    /** A list of choices, one of which is picked: an input_select or a select. */
+    static boolean isSelect(String domain) {
+        return "input_select".equals(domain) || "select".equals(domain);
+    }
+
+    /** Whether the menu is a list of text choices, not a row of icon buttons. */
+    static boolean isList(String entityId) {
+        return isSelect(domain(entityId));
     }
 
     /** One button in an item's menu. */
@@ -178,6 +188,14 @@ final class Actions {
                 choices.add(new Choice("Unlock", "mdi:lock-open-variant", new Call("lock", "unlock", "unlock"),
                     "unlocked".equals(value) || "unlocking".equals(value)));
                 break;
+            case "input_select":
+            case "select":
+                // Each option sets the entity to it. What that starts is up to Home Assistant.
+                for (String option : state.options) {
+                    choices.add(new Choice(option, null, new Call(domain(entityId), "select_option", "choose " + option,
+                        Collections.<String, Object>singletonMap("option", option)), option.equals(value)));
+                }
+                break;
             default:
                 break;
         }
@@ -203,6 +221,8 @@ final class Actions {
     /** A short description of the entity's state for a menu's title, such as "Open · 40%". */
     static String describe(String entityId, EntityState state) {
         if (!state.usable()) return "Unavailable";
+        // A select's state is one of its own options, shown as it is written.
+        if (isSelect(domain(entityId))) return state.state;
         String value = state.state.replace('_', ' ');
         String text = Character.toUpperCase(value.charAt(0)) + value.substring(1);
         if ("cover".equals(domain(entityId)) && state.position != null) text += " \u00b7 " + state.position + "%";
@@ -239,6 +259,8 @@ final class Actions {
             case "button":
             case "input_button": return "mdi:gesture-tap-button";
             case "media_player": return on ? "mdi:pause-circle" : "mdi:play-circle-outline";
+            case "input_select":
+            case "select": return "mdi:format-list-bulleted";
             case "binary_sensor": return on ? "mdi:checkbox-marked-circle" : "mdi:checkbox-blank-circle-outline";
             default: return "mdi:circle-outline";
         }

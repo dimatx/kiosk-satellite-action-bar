@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- A tap on an **input select** or **select** opens a menu of its options, with the current one marked. Picking one sets it, and a Home Assistant automation can do the rest (issue 1). A long list scrolls.
+- The manifest declares `minAppVersion` 2026.10.25, so Kiosk Satellite tells an older kiosk what it needs.
+
 ## 0.3.4
 
 - An amber icon tile, so the icon stands out against the teal Community Plugins page.
