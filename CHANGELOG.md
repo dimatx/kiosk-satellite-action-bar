@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+- The **Entity** picker also lists entities Home Assistant hides, such as a light group hidden from dashboards, with the hidden icon. Needs Kiosk Satellite 2026.10.41 or newer. Older versions ignore this and keep leaving hidden entities out, and everything else works as before.
+
 ## 0.4.0
 
 - A tap on an **input select** or **select** opens a menu of its options, with the current one marked. Picking one sets it, and a Home Assistant automation can do the rest (issue 1). A long list scrolls.

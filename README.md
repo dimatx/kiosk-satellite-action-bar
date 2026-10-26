@@ -17,13 +17,13 @@ A companion to [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-sate
 - **Live state.** A button lights up while its entity is on or open, dims while it's unavailable, and shows a tap as pending until Home Assistant confirms it.
 - **Menus for shades, locks and selects.** A tap on a shade opens Open, Stop and Close with a slider for its position. A tap on a lock opens Lock and Unlock. A tap on an input select or select opens its options. Nothing moves until you choose, and an unlocked lock or open garage stands out in a warning color.
 - **No token to manage.** Kiosk Satellite calls Home Assistant through its own connection. The plugin never sees a token.
-- **Set up without typing.** Pick each entity from a list. Its name and icon fill themselves in, and you can change them.
+- **Set up without typing.** Pick each entity from a list, including entities Home Assistant hides, such as a light group hidden from your dashboards. Its name and icon fill themselves in, and you can change them.
 - **Fits your layout.** A rail down the right or left, or a bar along the top or bottom. Names wrap to two lines, or hide them for icons only.
 - **Light.** Native Android views, no WebView, and only the buttons that change are redrawn.
 
 ## Installation
 
-You need Kiosk Satellite **2026.10.25** or newer, connected to Home Assistant. On **2026.10.30** and newer the bar follows each kiosk's **Scale UI**.
+You need Kiosk Satellite **2026.10.25** or newer, connected to Home Assistant. On **2026.10.30** and newer the bar follows each kiosk's **Scale UI**. On **2026.10.41** and newer the entity picker also lists hidden entities, which older versions leave out.
 
 ### Community Plugins (Recommended)
 

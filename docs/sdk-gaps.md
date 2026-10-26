@@ -2,7 +2,7 @@
 
 Places where the Kiosk Satellite plugin SDK made a feature of the action bar hard or impossible, for the KS maintainer. Overlay gaps this plugin shares with the navbar, such as slow overlay creation and the stretched frame after a resize, are tracked once in the [navbar's list](https://github.com/dimatx/kiosk-satellite-navbar/blob/main/docs/sdk-gaps.md) and not repeated here.
 
-Checked against **Kiosk Satellite 2026.10.31**. Gap numbers never change, so resolved gaps leave holes.
+Checked against **Kiosk Satellite 2026.10.41**. Gap numbers never change, so resolved gaps leave holes.
 
 | # | Gap | Kind | What users notice |
 | --- | --- | --- | --- |
@@ -45,17 +45,6 @@ Checked against **Kiosk Satellite 2026.10.31**. Gap numbers never change, so res
 
 **Suggestion:** Detect the bad combination and use Skia for platform views, or turn on **Legacy renderer** automatically when a plugin overlay is shown on Mesa with `minigbm`, the way it already does after startup crashes.
 
-## 5. The entity picker leaves out hidden entities
-
-*Product.*
-
-**Need:** Put a light group on the bar, such as one that switches every art light in the house.
-
-**Today:** The `entity` picker lists every entity except those Home Assistant marks hidden: `home_assistant_manager.dart` keeps a state only when its registry entry has no `hidden_by`. A user can hide a group helper so its members, not the group, show in Home Assistant's area views, and a hidden entity can still be one they want to control from a wall panel. Home Assistant's own entity pickers still offer hidden entities; hiding only keeps them off generated dashboards. Found with a light group hidden by the user, which the picker never offered.
-
-**Workaround:** Unhide the entity in Home Assistant, which is enough while this is rare. Setting the item over the remote API with `configurePlugin` also works.
-
-**Suggestion:** List hidden entities too, perhaps after the others or behind a "Show hidden" toggle, as Home Assistant does. Not filed upstream: it was filed as issue 1157 and closed, because the workaround is enough. Reopen it if more people hit it. A plugin could list entities itself with `render_template` and plugin choices, but that rebuilds a picker KS already has.
 
 ## 7. Fleet sync holds a plugin update without saying so
 
@@ -99,3 +88,4 @@ Checked against **Kiosk Satellite 2026.10.31**. Gap numbers never change, so res
 | --- | --- | --- | --- |
 | 3 | A wrapped overlay was cut off when the UI scale was above 100% | 2026.10.30 sizes the window with the unscaled pixel ratio | The workaround in the resize gate stays for older versions and never triggers on 2026.10.30 and newer |
 | 6 | A fleet-synced plugin could not be sized per kiosk | 2026.10.30: plugins follow each kiosk's **Scale UI** (upstream issue 1037) | **Size** is a fleet-wide multiplier on top of each kiosk's Scale UI |
+| 5 | The entity picker left out hidden entities | `"includeHidden": true` on an `entity` setting, 2026.10.41 (upstream issue 1157, which the maintainer added after it was closed) | The Entity field lists hidden entities such as a light group, with the hidden icon. Older Kiosk Satellite ignores the flag and still leaves them out |
