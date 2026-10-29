@@ -231,6 +231,13 @@ public final class ActionTest {
         check(!cfg.visibleAt("/lovelace/settings"));
         check(cfg.visibleAt("/lovelace/other"));
         check(cfg.visibleAt(null));
+        // A bare page, such as a built-in one, also hides the bar on its sub-pages.
+        String bare = Paths.hideEntry("energy");
+        check(ActionConfig.hides(bare, "/energy"));
+        check(ActionConfig.hides(bare, "/energy/setup"));
+        check(!ActionConfig.hides(bare, "/energy-2"));
+        check(!ActionConfig.hides(Paths.hideEntry("/panel/settings"), "/panel/settings/sub"));
+        check(!ActionConfig.hides(Paths.hideEntry("wall/0"), "/wall/1"));
 
         Map<String, Object> relabeled = new HashMap<>(settings);
         List<Object> renamed = new ArrayList<>(rows);

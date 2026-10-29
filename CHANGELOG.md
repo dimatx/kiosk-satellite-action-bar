@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2
+
+- **Fixed** **Hide the bar on** now covers a built-in page's sub-pages, so picking Energy also hides the bar on Energy's setup and Electricity tabs.
+- Kiosk Satellite 2026.10.43 lists Home Assistant's own pages in the page pickers, so **Hide the bar on** can name them.
+
 ## 0.4.1
 
 - The **Entity** picker also lists entities Home Assistant hides, such as a light group hidden from dashboards, with the hidden icon. Needs Kiosk Satellite 2026.10.41 or newer. Older versions ignore this and keep leaving hidden entities out, and everything else works as before.

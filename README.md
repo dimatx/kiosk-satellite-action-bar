@@ -98,7 +98,7 @@ A call is sent once and never retried, because a call that timed out may still h
 | Swipe to hide | Start visible, Start hidden or Off |
 | Hide after | Seconds without a tap before the bar hides. 0 keeps it visible |
 | Keep the dashboard clear | The dashboard ends beside the bar instead of under it. On by default |
-| Hide the bar on | Pages where the bar stays hidden, picked from your dashboards |
+| Hide the bar on | Pages where the bar stays hidden, picked from your dashboards and Home Assistant's own pages. A bare page such as `energy` also covers its sub-pages |
 
 </details>
 
