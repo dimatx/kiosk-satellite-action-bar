@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "ks-action-bar",
-  "name": "Action Bar",
-  "version": "0.4.2",
+  "name": "Action bar",
+  "version": "0.4.3",
   "apiVersion": 1,
   "minAppVersion": "2026.10.25",
   "minAndroidSdk": 26,

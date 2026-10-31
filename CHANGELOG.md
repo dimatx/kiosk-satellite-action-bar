@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.3
+
+- **Changed** the plugin is now called **Action bar**, with lower case *bar* to match **Navigation bar**. The plugin ID and your settings are unchanged.
+
 ## 0.4.2
 
 - **Fixed** **Hide the bar on** now covers a built-in page's sub-pages, so picking Energy also hides the bar on Energy's setup and Electricity tabs.

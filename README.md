@@ -1,4 +1,4 @@
-# Action Bar for Kiosk Satellite
+# Action bar for Kiosk Satellite
 
 **One-tap Home Assistant controls for [Kiosk Satellite](https://github.com/jxlarrea/kiosk-satellite) wall panels.** Switch a light, open the shades or lock up, from any page, without opening a dashboard. Each button shows its entity's live state, and Kiosk Satellite draws the bar with its own colors, type and icons, so it looks like part of the kiosk.
 
@@ -9,7 +9,7 @@
 | <img src="docs/images/bottom.png" alt="The action bar along the bottom" width="260"> | <img src="docs/images/menu-cover.png" alt="The menu for a shade, with Open, Stop and Close and a position slider" width="150"> <img src="docs/images/menu-lock.png" alt="The menu for a lock, with Lock and Unlock" width="100"> | <img src="docs/images/tab.png" alt="The bar hidden behind a tab" width="260"> |
 | A bar along the top or bottom | A tap opens a menu beside the button | Swipe it away behind a small tab |
 
-A companion to [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar): the navbar moves between pages, the action bar acts in place.
+A companion to [Navigation bar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar): the navigation bar moves between pages, the action bar acts in place.
 
 ## Why use it
 
@@ -27,11 +27,11 @@ You need Kiosk Satellite **2026.10.25** or newer, connected to Home Assistant. O
 
 ### Community Plugins (Recommended)
 
-Action Bar is listed in [Community Plugins](https://kiosksatellite.com/plugins/). Use the button below to open it in your Kiosk Satellite and install it.
+Action bar is listed in [Community Plugins](https://kiosksatellite.com/plugins/). Use the button below to open it in your Kiosk Satellite and install it.
 
 [![Install in Kiosk Satellite](https://kiosksatellite.com/img/badges/plugin-add.svg)](https://kiosksatellite.com/redirect/plugin/?repository=dimatx/kiosk-satellite-action-bar)
 
-Or search for `Action Bar` in **Settings > Plugin Manager > Browse plugins** in Kiosk Satellite.
+Or search for `Action bar` in **Settings > Plugin Manager > Browse plugins** in Kiosk Satellite.
 
 ### Manual
 
@@ -41,7 +41,7 @@ Or search for `Action Bar` in **Settings > Plugin Manager > Browse plugins** in 
 
 ### First steps
 
-Turn on **Action Bar**, open it and tap **Add item**. Pick an entity and tap **Save**. Its button appears on the right edge of the screen.
+Turn on **Action bar**, open it and tap **Add item**. Pick an entity and tap **Save**. Its button appears on the right edge of the screen.
 
 Settings are on the plugin's page, on the kiosk or in Remote Admin, and take effect as soon as you save them.
 
@@ -86,7 +86,7 @@ A call is sent once and never retried, because a call that timed out may still h
 <details>
 <summary><b>All settings</b></summary>
 
-<p align="center"><img src="docs/images/settings.png" alt="The Action Bar settings page" width="480"></p>
+<p align="center"><img src="docs/images/settings.png" alt="The Action bar settings page" width="480"></p>
 
 | Setting | What it does |
 | --- | --- |
@@ -118,11 +118,11 @@ Swipe the bar toward its edge to hide it behind a small tab. Swipe the tab back,
 
 **An entity is missing from the list.** The list leaves out entities hidden in Home Assistant. Unhide it under **Settings > Entities** to pick it.
 
-**Does it work with Fleet Management?** Yes, but a profile syncs all of a plugin's settings, so every kiosk on it gets the same items. To give each room its own buttons, leave Action Bar out of the profile's **Plugins** row and install it on each kiosk.
+**Does it work with Fleet Management?** Yes, but a profile syncs all of a plugin's settings, so every kiosk on it gets the same items. To give each room its own buttons, leave Action bar out of the profile's **Plugins** row and install it on each kiosk.
 
 **The plugin's page says an entity was not found.** Kiosk Satellite's Home Assistant user can't see it, or it was renamed. Pick the entity again.
 
-**Does it work with the navbar?** Yes. Put the navbar along the bottom and the action bar on the right, and the dashboard keeps clear of both.
+**Does it work with the navigation bar?** Yes. Put the navigation bar along the bottom and the action bar on the right, and the dashboard keeps clear of both.
 
 </details>
 
@@ -144,11 +144,11 @@ The ZIP lands in `dist/`. Install it with **Plugin Manager > Developer Tools > I
 
 ## Privacy
 
-Action Bar talks only to your own Home Assistant, and only through Kiosk Satellite's connection. It reads the state of the entities you add and, when you tap, calls the matching service on that entity, such as `homeassistant.toggle` or `lock.unlock`. It never sees a Home Assistant token and sends nothing anywhere else.
+Action bar talks only to your own Home Assistant, and only through Kiosk Satellite's connection. It reads the state of the entities you add and, when you tap, calls the matching service on that entity, such as `homeassistant.toggle` or `lock.unlock`. It never sees a Home Assistant token and sends nothing anywhere else.
 
 ## Credits
 
-Built for [Kiosk Satellite](https://github.com/jxlarrea/kiosk-satellite) by [@jxlarrea](https://github.com/jxlarrea), whose plugin SDK, overlays, pickers, icons and Home Assistant access make a bar like this possible. Started from the [Kiosk Satellite plugin template](https://github.com/jxlarrea/kiosk-satellite-plugins), and shares its overlay work with [Navbar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar). Plugin SDK limits found along the way are tracked in [docs/sdk-gaps.md](docs/sdk-gaps.md).
+Built for [Kiosk Satellite](https://github.com/jxlarrea/kiosk-satellite) by [@jxlarrea](https://github.com/jxlarrea), whose plugin SDK, overlays, pickers, icons and Home Assistant access make a bar like this possible. Started from the [Kiosk Satellite plugin template](https://github.com/jxlarrea/kiosk-satellite-plugins), and shares its overlay work with [Navigation bar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar). Plugin SDK limits found along the way are tracked in [docs/sdk-gaps.md](docs/sdk-gaps.md).
 
 ## License
 

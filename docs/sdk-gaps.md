@@ -1,6 +1,6 @@
 # Plugin SDK gaps
 
-Places where the Kiosk Satellite plugin SDK made a feature of the action bar hard or impossible, for the KS maintainer. Overlay gaps this plugin shares with the navbar, such as slow overlay creation and the stretched frame after a resize, are tracked once in the [navbar's list](https://github.com/dimatx/kiosk-satellite-navbar/blob/main/docs/sdk-gaps.md) and not repeated here.
+Places where the Kiosk Satellite plugin SDK made a feature of the action bar hard or impossible, for the KS maintainer. Overlay gaps this plugin shares with the navigation bar, such as slow overlay creation and the stretched frame after a resize, are tracked once in the [navigation bar's list](https://github.com/dimatx/kiosk-satellite-navbar/blob/main/docs/sdk-gaps.md) and not repeated here.
 
 Checked against **Kiosk Satellite 2026.10.41**. Gap numbers never change, so resolved gaps leave holes.
 
@@ -52,7 +52,7 @@ Checked against **Kiosk Satellite 2026.10.41**. Gap numbers never change, so res
 
 **Need:** Update a plugin on the leader and see every follower get it, or learn why one did not.
 
-**Today:** A follower whose Kiosk Satellite version differs from the leader's takes no plugin updates at all until it is on the same version. The fleet page says only *Needs 2026.10.31* on the follower's row, and the follower's Plugin Manager says nothing. Measured on 2026.10.31 with 11 of 12 followers on 2026.10.29: after a navbar release only the follower on the leader's version moved up, and the rest stayed one or two releases behind with the plugin still marked as synced.
+**Today:** A follower whose Kiosk Satellite version differs from the leader's takes no plugin updates at all until it is on the same version. The fleet page says only *Needs 2026.10.31* on the follower's row, and the follower's Plugin Manager says nothing. Measured on 2026.10.31 with 11 of 12 followers on 2026.10.29: after a navigation bar release only the follower on the leader's version moved up, and the rest stayed one or two releases behind with the plugin still marked as synced.
 
 **Workaround:** Update every follower's Kiosk Satellite first, then the plugins.
 
@@ -64,7 +64,7 @@ Checked against **Kiosk Satellite 2026.10.41**. Gap numbers never change, so res
 
 **Need:** Move kiosks that already run a plugin from GitHub under fleet management.
 
-**Today:** A follower that installed the plugin from its GitHub repository refuses the leader's package: the leader's row shows *Could not install Navbar: This plugin ID belongs to another repository. Uninstall it before changing sources.* The packages are the same release from the same repository, checked by SHA-256. Seen on a Fire Max 11 on 2026.10.31.
+**Today:** A follower that installed the plugin from its GitHub repository refuses the leader's package: the leader's row shows *Could not install Navigation bar: This plugin ID belongs to another repository. Uninstall it before changing sources.* The packages are the same release from the same repository, checked by SHA-256. Seen on a Fire Max 11 on 2026.10.31.
 
 **Workaround:** Remove the plugin on that follower, which deletes its settings, and sync again.
 
