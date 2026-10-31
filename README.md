@@ -11,6 +11,8 @@
 
 A companion to [Navigation bar for Kiosk Satellite](https://github.com/dimatx/kiosk-satellite-navbar): the navigation bar moves between pages, the action bar acts in place.
 
+For passive updates, add [Live notifications](https://github.com/dimatx/kiosk-satellite-live-notifications) as an optional companion. It rotates through entity-status notifications one at a time, keeping appliance progress or a vehicle's ETA visible on your dashboard or screensaver.
+
 ## Why use it
 
 - **One tap, from anywhere.** Lights, switches, fans, shades, scripts, scenes, buttons and media players respond to a single tap, on every page.
