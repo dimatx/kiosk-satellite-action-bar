@@ -169,6 +169,10 @@ public final class ActionBarPlugin implements KioskPlugin {
             String entity = event.substring("ks.ha.entity.".length());
             if (!subscribed.contains(entity)) return;
             EntityState next = EntityState.parse(payload);
+            EntityState known = states.get(entity);
+            // Stay optimistic: a resubscribe after the screensaver reports "connecting" for a moment,
+            // and the entity is only unavailable once KS or Home Assistant says so.
+            if (next.connecting() && known != null && known.usable()) return;
             EntityState before = states.put(entity, next);
             // A pending tap ends when Home Assistant reports anything new for the entity.
             if (before != null && (!Objects.equals(before.state, next.state) || !Objects.equals(before.lastUpdated, next.lastUpdated))) {

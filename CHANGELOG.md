@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.4
+
+- **Fixed** the buttons no longer dim for a moment when the screensaver ends. While Kiosk Satellite reconnects to Home Assistant, a button keeps its last known state and dims only when the entity is really unavailable.
+
 ## 0.4.3
 
 - **Changed** the plugin is now called **Action bar**, with lower case *bar* to match **Navigation bar**. The plugin ID and your settings are unchanged.

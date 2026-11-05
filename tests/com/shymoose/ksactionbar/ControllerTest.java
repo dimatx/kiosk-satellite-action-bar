@@ -24,6 +24,7 @@ public final class ControllerTest {
         menusForCoversAndLocks();
         failuresAndTimeouts();
         momentaryAndUnavailable();
+        staysOptimisticWhileConnecting();
         fillsLabels();
         autoHideAndPages();
         olderKioskSatellite();
@@ -189,6 +190,23 @@ public final class ControllerTest {
         f.plugin.onEvent("ks.ha.entity.light.porch", missing);
         f.clock.flush();
         check(f.host.status.contains("light.porch was not found"), "missing entity is reported");
+    }
+
+    private static void staysOptimisticWhileConnecting() {
+        Fixture f = new Fixture(items("light.porch"));
+        check(f.plugin.tiles().get(0).unavailable, "an entity nothing is known about starts dimmed");
+        f.plugin.onEvent("ks.ha.entity.light.porch", state("on", "t1", "Porch"));
+        Map<String, Object> connecting = new HashMap<>();
+        connecting.put("entityId", "light.porch");
+        connecting.put("status", "connecting");
+        f.plugin.onEvent("ks.ha.entity.light.porch", connecting);
+        f.clock.flush();
+        check(!f.plugin.tiles().get(0).unavailable, "a resubscribe does not dim a known state");
+        check(f.plugin.tiles().get(0).active, "a resubscribe keeps the state");
+        f.plugin.onEvent("ks.ha.entity.light.porch", state("unavailable", "t2", "Porch"));
+        f.plugin.onEvent("ks.ha.entity.light.porch", connecting);
+        f.clock.flush();
+        check(f.plugin.tiles().get(0).unavailable, "a known unavailable entity stays dimmed");
     }
 
     private static void fillsLabels() {

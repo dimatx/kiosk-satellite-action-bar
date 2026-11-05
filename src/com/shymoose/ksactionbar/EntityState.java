@@ -80,6 +80,11 @@ final class EntityState {
         return java.util.Collections.unmodifiableList(options);
     }
 
+    /** KS is still (re)subscribing. The state it last reported is probably still right. */
+    boolean connecting() {
+        return "connecting".equals(status);
+    }
+
     /** Whether Home Assistant reports a usable state the bar can act on. */
     boolean usable() {
         return "available".equals(status) && state != null && !"unavailable".equals(state) && !"unknown".equals(state);
