@@ -15,7 +15,7 @@ For passive updates, add [Live notifications](https://github.com/dimatx/kiosk-sa
 
 ## Why use it
 
-- **One tap, from anywhere.** Lights, switches, fans, shades, scripts, scenes, buttons and media players respond to a single tap, on every page.
+- **One tap, from anywhere.** Lights, switches, fans, shades, scripts, scenes, buttons and media players respond to a single tap, on every page. With Kiosk Satellite 2026.11.14 or newer the bar also stays over the Calendar, the Music Library, camera views and other plugins' screens.
 - **Live state.** A button lights up while its entity is on or open, dims while it's unavailable, and shows a tap as pending until Home Assistant confirms it.
 - **Menus for shades, locks and selects.** A tap on a shade opens Open, Stop and Close with a slider for its position. A tap on a lock opens Lock and Unlock. A tap on an input select or select opens its options. Nothing moves until you choose, and an unlocked lock or open garage stands out in a warning color.
 - **No token to manage.** Kiosk Satellite calls Home Assistant through its own connection. The plugin never sees a token.

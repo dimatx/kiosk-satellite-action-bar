@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0
+
+- **Changed** the bar and its menus now stay over every page, not just the dashboard: the Calendar, the Music Library, alarms, timers, camera views and other plugins' screens. The screensaver still hides it. Needs Kiosk Satellite 2026.11.14 or newer; older releases behave as before.
+
 ## 0.4.4
 
 - **Fixed** the buttons no longer dim for a moment when the screensaver ends. While Kiosk Satellite reconnects to Home Assistant, a button keeps its last known state and dims only when the entity is really unavailable.

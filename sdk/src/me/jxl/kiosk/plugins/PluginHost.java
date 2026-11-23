@@ -90,8 +90,22 @@ public interface PluginHost {
      * Touches stay with KS. onDestroy means the screensaver is gone, so stop updating the view.
      */
     default void publishScreensaverView(String key, String title, OverlayFactory factory) { throw new UnsupportedOperationException("Native screensavers are unavailable"); }
+    /**
+     * SDK 1, screensaver. As above, but with touch true single taps reach the view and a double tap closes the
+     * screensaver. Draw your own hint, such as "Double tap to close". Older KS releases throw.
+     */
+    default void publishScreensaverView(String key, String title, OverlayFactory factory, boolean touch) { throw new UnsupportedOperationException("Touch screensavers are unavailable"); }
     /** SDK 1, screensaver. Remove a renderer. KS retains the session with a black background. */
     default void removeScreensaver(String key) { throw new UnsupportedOperationException("Screensavers are unavailable"); }
+    /**
+     * SDK 1, player. Offer a player under Media Player > Player, listed under This device as the plugin's name and the
+     * title, such as "Radio: Internet Archive". KS calls listener.onActivate once the user picks it and
+     * onDeactivate when the pick moves on. Publishing again under the same key changes the title. key is 1 to 40
+     * lowercase letters, digits and underscores, title up to 80 characters. At most two players per plugin.
+     */
+    default void publishPlayer(String key, String title, PlayerListener listener) { throw new UnsupportedOperationException("Players are unavailable"); }
+    /** SDK 1, player. Withdraw a player. A pick that names it stays and shows the player as unavailable. */
+    default void removePlayer(String key) { throw new UnsupportedOperationException("Players are unavailable"); }
     /** Publish a bounded chart snapshot. SDK 1. */
     default void publishSeries(String key, Map<String, Object> chart) { throw new UnsupportedOperationException("Charts are unavailable"); }
     /** Remove this session's chart with the given key. */
@@ -102,6 +116,13 @@ public interface PluginHost {
     default void removeStatusTile(String key) { throw new UnsupportedOperationException("Status tiles are unavailable"); }
     /** SDK 1. Fire a trigger declared in the manifest. Gestures mapped to it run their actions. At most four per second, extras are dropped. */
     default void fireTrigger(String id) { throw new UnsupportedOperationException("Gesture triggers are unavailable"); }
+    /**
+     * SDK 1. Run the action the user chose in an "action" setting. The setting is its key, or for a list row field
+     * the list key, the row index and the field key joined by dots, such as "items.2.action". The callback hears
+     * ok=false with an error when nothing is chosen, Lockdown Mode is on or the action fails. At most four per
+     * second. Plugins cannot change action settings, so only the user decides what runs.
+     */
+    default void runAction(String setting, CommandCallback callback) { throw new UnsupportedOperationException("Action settings are unavailable"); }
     /** SDK 1, overlay. Show a native overlay, or replace the one with this key. Never blocks: KS builds its view later on the main thread through the factory. At most four per plugin. */
     default void showOverlay(String key, OverlaySpec spec, OverlayFactory factory) { throw new UnsupportedOperationException("Native overlays are unavailable"); }
     /** SDK 1, overlay. Remove an overlay. Unknown keys are ignored. */
@@ -190,4 +211,11 @@ public interface PluginHost {
     /** SDK 1, entities. Changes arrive as select.KEY with {option: string}. Publish the applied option to confirm it. */
     default void publishSelect(String key, String name, String[] options, String state) { throw new UnsupportedOperationException("SDK 1 required"); }
     default void removeSelect(String key) { throw new UnsupportedOperationException("SDK 1 required"); }
+    /**
+     * SDK 1, entities. A number with a nullable state. Metadata: min (default 0), max (default 100), step (default 1),
+     * unit and mode ("auto", "slider" or "box"). Changes arrive as number.KEY with {value: double}. Publish the
+     * applied value to confirm it.
+     */
+    default void publishNumber(String key, String name, Map<String, Object> metadata, Double state) { throw new UnsupportedOperationException("Plugin numbers are unavailable"); }
+    default void removeNumber(String key) { throw new UnsupportedOperationException("Plugin numbers are unavailable"); }
 }

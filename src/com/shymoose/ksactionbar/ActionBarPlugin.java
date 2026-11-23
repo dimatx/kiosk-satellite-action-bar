@@ -91,6 +91,20 @@ public final class ActionBarPlugin implements KioskPlugin {
     private final Set<String> subscribed = new HashSet<>();
     // Main-thread-only state.
     private boolean shown;
+    /** Whether this Kiosk Satellite has the views layer, where the bar stays over every page and view. */
+    private boolean viewsLayer = true;
+
+    /** Puts an overlay in the views layer, over the Calendar and other pages. Older Kiosk Satellite keeps the dashboard layer. */
+    private OverlaySpec layered(OverlaySpec spec) {
+        if (viewsLayer) {
+            try {
+                return spec.layer(OverlaySpec.LAYER_VIEWS);
+            } catch (LinkageError olderHost) {
+                viewsLayer = false;
+            }
+        }
+        return spec;
+    }
     private int reserved;
     private ActionConfig.Edge reservedEdge;
     private int depth;
@@ -326,7 +340,7 @@ public final class ActionBarPlugin implements KioskPlugin {
             case BOTTOM: bottom = clear; break;
             default: right = clear; break;
         }
-        OverlaySpec spec = OverlaySpec.at(anchor(cfg))
+        OverlaySpec spec = layered(OverlaySpec.at(anchor(cfg)))
             .inset(left, top, right, bottom)
             .offset(cfg.vertical ? 0 : offset, cfg.vertical ? offset : 0)
             .closeOnOutsideTouch(true)
@@ -458,7 +472,7 @@ public final class ActionBarPlugin implements KioskPlugin {
             boolean replace = rebuild.getAndSet(false);
             if (!shown || replace) {
                 closeMenu();
-                current.showOverlay(BAR, OverlaySpec.at(anchor(cfg)).closeOnBack(false)
+                current.showOverlay(BAR, layered(OverlaySpec.at(anchor(cfg)).closeOnBack(false))
                     .enter(OverlaySpec.FADE).exit(OverlaySpec.FADE).transitionDuration(BAR_TRANSITION_MS), new RootFactory());
                 errors.remove("overlay");
                 if (depth > 0) reserve(depth);
